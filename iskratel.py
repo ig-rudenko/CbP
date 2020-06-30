@@ -9,9 +9,9 @@ import ftplib
 import os
 import re
 
-user = 'sysadmin'
-password = 'ik118'
-ip = '192.168.188.25'
+user = ''
+password = ''
+ip = ''
 name = 'test'
 
 
