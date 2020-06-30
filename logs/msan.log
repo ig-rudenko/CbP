@@ -1,0 +1,47 @@
+| 2020-06-03 16:04:54 | INFO | 192.168.0.1     | test | MSAN |Informational message 
+| 2020-06-03 16:04:54 | ERROR | MSAN | An error has happened! 
+| 2020-06-03 16:12:06 | CRITICAL | This is a debug message 
+| 2020-06-03 16:12:06 | INFO | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:12:06 | ERROR | MSAN | An error has happened! 
+| 2020-06-03 16:16:10 | CRITICAL| This is a debug message 
+| 2020-06-03 16:16:10 | INFO| 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:16:10 | ERROR| MSAN | An error has happened! 
+| 2020-06-03 16:17:04 | CRITICAL| This is a debug message 
+| 2020-06-03 16:17:04 | INFO| 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:17:04 | ERROR| MSAN | An error has happened! 
+| 2020-06-03 16:17:19 | CRITICAL | This is a debug message 
+| 2020-06-03 16:17:19 | INFO | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:17:19 | ERROR | MSAN | An error has happened! 
+| 2020-06-03 16:18:18 | CRITICAL | This is a debug message 
+| 2020-06-03 16:18:18 | INFO | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:18:18 | ERROR | MSAN | An error has happened! 
+| 2020-06-03 16:19:08 | CRITICAL | This is a debug message 
+| 2020-06-03 16:19:08 | INFO | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:19:08 | ERROR | MSAN | An error has happened! 
+| 2020-06-03 16:19:55 | CRITICAL | This is a debug message 
+| 2020-06-03 16:19:55 | INFO | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:19:55 | ERROR | MSAN | An error has happened! 
+| 2020-06-03 16:24:09 | CRITICAL | This is a debug message 
+| 2020-06-03 16:24:09 | INFO | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:24:09 | ERROR | MSAN | An error has happened! 
+| 2020-06-03 16:28:03 | CRITICAL | This is a debug message 
+| 2020-06-03 16:28:03 | INFO | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:28:03 | ERROR | MSAN | An error has happened! 
+| (asctime)s | CRITICAL | This is a debug message 
+| (asctime)s | INFO | 192.168.0.1     | test | MSAN | Informational message 
+| (asctime)s | ERROR | MSAN | An error has happened! 
+| 2020-06-03 16:40:22 | This is a debug message 
+| 2020-06-03 16:40:22 | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:40:22 | MSAN | An error has happened! 
+| 2020-06-03 16:43:44 | This is a debug message 
+| 2020-06-03 16:43:44 | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:43:44 | MSAN | An error has happened! 
+| 2020-06-03 16:44:37 | This is a debug message 
+| 2020-06-03 16:44:37 | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:44:37 | MSAN | An error has happened! 
+| 2020-06-03 16:46:11 | This is a debug message 
+| 2020-06-03 16:46:11 | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:46:11 | MSAN | An error has happened! 
+| 2020-06-03 16:46:36 | This is a debug message 
+| 2020-06-03 16:46:36 | 192.168.0.1     | test | MSAN | Informational message 
+| 2020-06-03 16:46:36 | MSAN | An error has happened! 
