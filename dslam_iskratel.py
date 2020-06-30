@@ -68,4 +68,3 @@ def dslam_iskratel(ip, name):
 
         t.write(b'logout\n')
         t.write(b'n')
-dslam_iskratel('192.168.189.169', 'name')
