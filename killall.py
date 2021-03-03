@@ -1,5 +1,5 @@
 import subprocess
-import logs
+from control import logs
 
 
 def killed_svi():

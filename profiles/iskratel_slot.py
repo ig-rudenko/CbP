@@ -7,7 +7,8 @@ import re
 from diff_config import diff_config
 import ftplib
 import os
-import logs
+from control import logs
+
 
 def iskratel_slot(devices_ip, name):
     '''
@@ -16,7 +17,6 @@ def iskratel_slot(devices_ip, name):
     '''
 
     ### Логи ###
-
     def elog(info, devices_ip, name):
 
         '''
@@ -29,7 +29,6 @@ def iskratel_slot(devices_ip, name):
     ### FTP download ###
 
     def ftp_download(start_path, local_path):
-
         '''
         Функция построения дерева директорий и скачивания всех файлов в них.
         Аргументы: начальный путь на ftp(str), начальный локальный путь для записи(str).
@@ -47,7 +46,7 @@ def iskratel_slot(devices_ip, name):
                 dir = re.search(r'\S*$', line)
                 try:
                     os.mkdir(local_path + '/' + dir.group(0))
-#                    print(name + '    найдена папка ' + dir.group(0))
+                    print(name + '    найдена папка ' + dir.group(0))
                     ftp_download(start_path + '/' + dir.group(0), local_path + '/' + dir.group(0))
                 except Exception as exc:
                     elog('Ошибка создания директории ' + dir.group(0) + ': ' + str(exc), devices_ip, name)
@@ -55,17 +54,17 @@ def iskratel_slot(devices_ip, name):
             if line.startswith('-'):
                 try:
                     file = re.search(r'\S*$', line)
-#                   print(name + '    найден файл ' + file.group(0))
+                    print(name + '    найден файл ' + file.group(0))
                     with open (local_path + '/' + file.group(0), 'wb') as local_file:
                         ftp.retrbinary('RETR ' + file.group(0), local_file.write)
                 except Exception as exc:
                     elog('Ошибка при скачивании файла ' + file.group(0) + ': ' + str(exc), devices_ip, name)
                     pass
         return
-   ### / ###
+    ### / ###
 
     now = datetime.datetime.now()
-#    print(name + '    старт')
+    print(name + '    старт')
     ### Юзернейм и пароль ###
     user = 'sysadmin'
     with open('/etc/svi_password.cfg', 'r') as f:
@@ -73,7 +72,7 @@ def iskratel_slot(devices_ip, name):
         for find_pass in master_password:
             try:
                 if user and 'iskratel_slot' in find_pass:
-                    password=str(find_pass.split(' ')[1]).encode('ascii')
+                    password = str(find_pass.split(' ')[1]).encode('ascii')
                     en_user = user.encode('ascii')
             except Exception as exc:
                 elog('Пароль не найден: ' + str(exc), devices_ip, name)
@@ -82,7 +81,7 @@ def iskratel_slot(devices_ip, name):
 
     ### Логин ###
     t = telnetlib.Telnet(devices_ip)
-    output = t.expect([b'user id :'],timeout=2)
+    output = t.expect([b'user id :'], timeout=2)
     if bool(re.findall(r'user id :', output[2].decode('ascii'))) == True:
         t.write(en_user + b'\n')
     else:
@@ -92,21 +91,18 @@ def iskratel_slot(devices_ip, name):
     if bool(re.findall(r'password:', output[2].decode('ascii'))) == True:
         t.write(password + b'\n')
     else:
-        elog('Не найдена строка ввода пароля',devices_ip, name)
+        elog('Не найдена строка ввода пароля', devices_ip, name)
         return
     ### / ###
 
     ### Чтение конфигурации ###
     output = t.expect([b'mBAN>'], timeout=2)
-    try:
-        if bool(re.findall(r'mBAN>', output[2].decode('ascii'))) == True:
-            t.write(b'show system config\n')
-#        print(name + '    логин успешен')
-        else:
-            elog('Не найдена строка приглашения',devices_ip, name)
-            return
-    except Exception as exc:
-        elog('Ошибка кодировки ' + exc, devices_ip, name)
+    if bool(re.findall(r'mBAN>', output[2].decode('ascii'))) == True:
+        t.write(b'show system config\n')
+        print(name + '    логин успешен')
+    else:
+        elog('Не найдена строка приглашения',devices_ip, name)
+        return
     cfg = []
     i = 1
     check = (b'1', b'2', b'3')
@@ -128,7 +124,7 @@ def iskratel_slot(devices_ip, name):
 #                cfg.append(output[2].decode('ascii').replace('\r\nPress any key to continue or Esc to stop scrolling.', ''))
 #                break
 #            elif if bool(re.findall(r'Press any key to continue or Esc to stop scrolling.', output[2].decode('ascii'))) == False:
-#
+#                
 #            i+=1
 #            print(i)
 #    except Exception as exc:
@@ -136,7 +132,7 @@ def iskratel_slot(devices_ip, name):
 #        return
     ### / ###
 
-    t.write(b'exit\n')  # logout
+    t.write(b'exit\n')  # logout 
 
     ### Первод конфига в строку, удаление блоков с динамическими данными, вызов функции сравнения ###
     cfg = ''.join(cfg).replace('\r', '')
@@ -151,15 +147,13 @@ def iskratel_slot(devices_ip, name):
     cut9 = cfg.find('Opt82 and statistics for each interface:')
     cut10 = cfg.find('Status and summary statistic of PPPoE IA:')
     cut11 = cfg.find('Show PPPoE specific information for each interface:')
-    cut12 = cfg.find('No DSS public key is detected:')
-    cut13 = cfg.find('SNMP:')
-    cut14 = cfg.find('mBAN>')
-    cfg = cfg[cut1:cut2] + cfg[cut3:cut4] + cfg[cut5:cut6] + cfg[cut7:cut8] + cfg[cut9:cut10] + cfg[cut11:cut12] + cfg[cut13:cut14]
-#    print(name + '    конфиг собран и подрезан')
+    cut12 = cfg.find('mBAN>')
+    cfg = cfg[cut1:cut2] + cfg[cut3:cut4] + cfg[cut5:cut6] + cfg[cut7:cut8] + cfg[cut9:cut10] + cfg[cut11:cut12]
+    print(name + '    конфиг собран и подрезан')
     try:
         diff_result = diff_config(name, cfg, 'iskratel')
     except Exception as exc:
-        elog('Ошибка функции сравнения: ' + str(exc),devices_ip, name)
+        elog('Ошибка функции сравнения: ' + str(exc), devices_ip, name)
         return
      ### / ###
 
@@ -168,23 +162,22 @@ def iskratel_slot(devices_ip, name):
         ### FTP ###
         try:
             with ftplib.FTP(devices_ip) as ftp:
-                ftp.login(user = user, passwd = password.decode('ascii'))
+                ftp.login(user=user, passwd=password.decode('ascii'))
                 ftp.cwd('/tffs')
                 now = now.strftime('%d-%m-%Y_%H-%M')
                 start_local_path = '/srv/config_mirror/dsl/' + name + '/' + now
                 os.mkdir(start_local_path)
                 my_folders = re.findall(r'M[A-Z,0-9]*', ' '.join(ftp.nlst()))
                 for my_folder in my_folders:
-#                    print(name + '    найдена М папка ' + my_folder)
+                    print(name + '    найдена М папка ' + my_folder)
                     local_path = start_local_path + '/' + str(my_folder).strip('[]').strip("'")
                     os.mkdir(local_path)
                     download = ftp_download('/tffs/'+str(my_folder).strip('[]').strip("'"), local_path)
                 ftp.quit()
         except Exception as exc:
-            elog('Ошибка FTP: ' + str(exc),devices_ip, name)
+            elog('Ошибка FTP: ' + str(exc), devices_ip, name)
             ftp.quit()
             return
         ### / ###
     print(name + '    скрипт завешён')
 #test =  iskratel_slot('192.168.188.43', 'test_isk')
-#iskratel_slot('192.168.188.222', 'SVSL-771-Blyuhera10-DSL2-7171')

@@ -8,7 +8,7 @@ import os.path
 from re import match, findall
 from diff_config import diff_config
 from datetime import datetime
-import logs
+from control import logs
 
 timed = str(datetime.now())[0:10]   # текущая дата 'yyyy-mm-dd'
 # функция логгирования
@@ -28,6 +28,7 @@ def upload(t, zte_name, name, ip):
         t.read_until(b'[Yes|No]:', timeout=1)
         t.write(b'y\n')
         output = str(t.read_until(b'done !', timeout=2))
+        print(output)
         if not bool(findall(r'done !', output)):
             elog("Дубликат %s файла конфигурации на коммутаторе не был удален!" % (name), ip, name)
         dir_in = '/srv/tftp/' + zte_name + '.txt'
@@ -86,7 +87,8 @@ def zte(ip, name, tftp):
         time.sleep(0.4)
         cfg=[]
         # wii - После преобразования с битовой строки остаются символы:
-        wii = '\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08'
+        wii = '\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 ' \
+              '\x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08'
         # ---------------------------ЛИСТИНГ КОНФИГУРАЦИИ--------------------------------
         while True:
             y = t.read_until(b'break -----', timeout=0.5).decode('ascii')
@@ -102,7 +104,8 @@ def zte(ip, name, tftp):
         if trfl:
             # ------------------------------РАБОТА С TFTP----------------------------------
             if tftp:
-                command_to_copy = str('copy startcfg.txt  ' + zte_name + '.txt \n').encode('ascii') # Копирование файла на коммутаторе
+                command_to_copy = str('copy startcfg.txt  ' + zte_name + '.txt \n').encode('ascii')
+                # Копирование файла на коммутаторе
                 t.write(command_to_copy)
                 time.sleep(1)
                 output = str(t.read_until(b'bytes copied', timeout=3))
@@ -119,7 +122,8 @@ def zte(ip, name, tftp):
                 else:
                     t.write(b'cd cfg\n')
                     time.sleep(1)
-                    command_to_copy = str('copy startrun.dat  ' + zte_name + '.txt \n').encode('ascii') # Копирование файла на коммутаторе
+                    command_to_copy = str('copy startrun.dat  ' + zte_name + '.txt \n').encode('ascii')
+                    # Копирование файла на коммутаторе
                     t.write(command_to_copy)
                     time.sleep(3)
                     upload(t, zte_name, name, ip)
@@ -146,5 +150,5 @@ def zte(ip, name, tftp):
         t.write(b'exit\n')
         t.write(b'exit\n')
         t.write(b'exit\n')
-        print(ip, ': Выполнено')
-#zte('172.30.0.73', 'SVSL-961-Eroshenko9-ASW1', True)
+
+# zte('172.30.0.73', 'SVSL-961-Eroshenko9-ASW1', True)
