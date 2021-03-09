@@ -4,7 +4,7 @@
 import pexpect
 from re import findall
 import sys
-from profiles import huawei_msan, zyxel
+from profiles import huawei_msan, zyxel, zte
 import yaml
 import ipaddress
 from control.database import DataBase
@@ -53,6 +53,7 @@ class TelnetConnect:
         self.auth_group = None
         self.login = []
         self.password = []
+        self.privilege_mode_password = 'admin'
         self.telnet_session = None
         self.vendor = ''
         self.interfaces = []
@@ -65,7 +66,7 @@ class TelnetConnect:
         self.backup_group = 'default'
 
     def set_authentication(self, mode: str = 'default', auth_file: str = f'{root_dir}/auth.yaml',
-                           auth_group: str = None, login=None, password=None) -> None:
+                           auth_group: str = None, login=None, password=None, privilege_mode_password: str = None) -> None:
         self.auth_mode = mode
         self.auth_file = auth_file
         self.auth_group = auth_group
@@ -78,6 +79,8 @@ class TelnetConnect:
                 self.password = ['admin'] if not self.auth_group else auth_dict['GROUPS'][self.auth_group.upper()]['password']
                 self.login = self.login if isinstance(self.login, list) else [self.login]
                 self.password = self.password if isinstance(self.password, list) else [self.password]
+                if auth_dict['GROUPS'][self.auth_group.upper()].get('privilege_mode_password'):
+                    self.privilege_mode_password = auth_dict['GROUPS'][self.auth_group.upper()]['privilege_mode_password']
 
             except Exception:
                 self.login = ['admin']
@@ -99,6 +102,9 @@ class TelnetConnect:
                         # Логин равен списку паролей найденных в элементе 'password' или 'admin'
                         self.password = (iter_dict['password'] if isinstance(iter_dict['password'], list)
                                          else [iter_dict['password']]) if iter_dict.get('password') else ['admin']
+                        self.privilege_mode_password = iter_dict['privilege_mode_password'] if iter_dict.get(
+                            'privilege_mode_password') else 'admin'
+
                         break
                 else:
                     self.login = ['admin']
@@ -111,6 +117,7 @@ class TelnetConnect:
         if login and password:
             self.login = login if isinstance(login, list) else [login]
             self.password = password if isinstance(password, list) else [password]
+            self.privilege_mode_password = privilege_mode_password if privilege_mode_password else 'admin'
 
         if self.auth_mode == 'mixed':
             try:
@@ -254,19 +261,43 @@ class TelnetConnect:
 
     def get_saved_configuration(self):
         if 'huawei-msan' in self.vendor:
-            self.configuration_str = huawei_msan.get_configuration(self.telnet_session)
-            return self.configuration_str
-        if 'zyxel' in self.vendor:
-            self.configuration_str = zyxel.get_configuration(
-                self.ip, self.device_name, self.login[0], self.password[0]
+            self.configuration_str = huawei_msan.get_configuration(
+                telnet_session=self.telnet_session
             )
             return self.configuration_str
+
+        if 'zyxel' in self.vendor:
+            self.configuration_str = zyxel.get_configuration(
+                ip=self.ip,
+                device_name=self.device_name,
+                login=self.login[0],
+                password=self.password[0]
+            )
+            return self.configuration_str
+
+        if 'zte' in self.vendor:
+            self.configuration_str = zte.get_configuration(
+                telnet_session=self.telnet_session,
+                privilege_mode_password=self.privilege_mode_password
+            )
 
     def config_diff(self):
         return diff_config(self.device_name, self.configuration_str)
 
     def backup_configuration(self):
         if 'huawei-msan' in self.vendor:
-            return huawei_msan.backup(self.telnet_session, self.ip, self.device_name, self.backup_group)
+            return huawei_msan.backup(
+                telnet_session=self.telnet_session,
+                device_ip=self.ip,
+                device_name=self.device_name,
+                backup_group=self.backup_group
+            )
+
         if 'zyxel' in self.vendor:
-            return zyxel.backup(self.ip, self.device_name, self.login[0], self.password[0], self.backup_group)
+            return zyxel.backup(
+                ip=self.ip,
+                device_name=self.device_name,
+                login=self.login[0],
+                password=self.password[0],
+                backup_group=self.backup_group
+            )
