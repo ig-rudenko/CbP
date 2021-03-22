@@ -1,48 +1,66 @@
-import time
 import shutil
-import os.path
-from re import findall
-from control.diff_config import diff_config
+import sys
+import os
 from datetime import datetime
 from control import logs
+import pexpect
+from configparser import ConfigParser
 
 timed = str(datetime.now())[0:10]   # текущая дата 'yyyy-mm-dd'
+
+cfg = ConfigParser()
+cfg.read(f'{sys.path[0]}/cbp.conf')
+ftp_directory = cfg.get('FTP', 'directory')
+tftp_directory = cfg.get('TFTP', 'directory')
+ftp_user = cfg.get('FTP', 'username')
+ftp_password = cfg.get('FTP', 'password')
+backup_server_ip = cfg.get('Main', 'backup_server_ip')
 
 
 def elog(info, ip, name):
     logs.error_log.error("%s-> %s: %s" % (ip.ljust(15, '-'), name, info))
 
 
-# ------------------------------------ФУНКЦИЯ ЗАГРУЗКИ ПО TFTP------------------------------------------------
-def upload(t, zte_name, name, ip):
-    send_tftp = str('tftp 10.20.0.14 upload ' + zte_name + '.txt \n').encode('ascii')  # Передача по tftp
-    send_tftp
-    t.write(send_tftp)
-    output = str(t.read_until(b'uploaded', timeout=5))
-    if bool(findall(r'bytes uploaded', output)):
-        delete_file = str('remove ' + zte_name + '.txt\n').encode('ascii')  # Удалить файл после передачи
-        t.write(delete_file)
-        t.read_until(b'[Yes|No]:', timeout=1)
-        t.write(b'y\n')
-        output = str(t.read_until(b'done !', timeout=2))
-        print(output)
-        if not bool(findall(r'done !', output)):
-            elog("Дубликат %s файла конфигурации на коммутаторе не был удален!" % (name), ip, name)
-        dir_in = '/srv/tftp/' + zte_name + '.txt'
-        if os.path.exists(dir_in):
-            dir_out = '/srv/config_mirror/asw/' + name.strip() + '/' + timed + 'startcfg.txt'
-            shutil.move(dir_in, dir_out)
-            if os.path.exists(dir_out):
-                elog("Конфигурация успешно скопирована и перенесена!", ip, name)
-            else:
-                elog("Файл конфигурации не был перенесен и находится в %s " % (dir_in), ip, name)
+def tftp_upload(telnet_session, device_name: str, device_ip: str, file_to_copy: str, backup_group: str):
+    """
+    Загрузка файла конфигурации по TFTP протоколу
+    """
+    telnet_session.sendline(f'tftp {backup_server_ip} upload {file_to_copy}')
+    upload_status = telnet_session.expect(
+        [
+            r'bytes uploaded',  # 0 - успешно
+            r'File not found',  # 1
+            pexpect.TIMEOUT     # 2
+        ],
+        timeout=5
+    )
+    if upload_status == 2:
+        telnet_session.sendcontrol('C')  # Прерываем
+        elog('Таймаут при подключении к серверу', device_ip, device_name)
+
+    telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+    # Удаляем файл
+    telnet_session.sendline(f'remove {file_to_copy}')
+    telnet_session.sendline(f'Yes')
+    telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+
+    if upload_status == 1:
+        elog(f'Файл {file_to_copy} не найден на устройстве', device_ip, device_name)
+
+    elif upload_status == 0:
+        uploaded_file = f'{tftp_directory}/{file_to_copy.split("/")[-1]}'
+        if os.path.exists(uploaded_file):
+            next_file = f'{ftp_directory}/{backup_group}/{device_name.strip()}/{timed}_{file_to_copy.split("/")[-1]}'
+            shutil.move(uploaded_file, next_file)
+            if not os.path.exists(next_file):
+                elog(f"Файл конфигурации не был перенесен и находится в {uploaded_file}", device_ip, device_name)
+            return True
         else:
-            elog("Файл конфигурации не был загружен!", ip, name)
-    else:
-        elog("Ошибка отправки файла конфигурации!", ip, name)
+            elog("Файл конфигурации не был загружен!", device_ip, device_name)
+    return False
 
 
-def get_configuration(telnet_session, privilege_mode_password: str):
+def get_configuration(telnet_session, privilege_mode_password: str) -> str:
     telnet_session.sendline('\n')
     if telnet_session.expect([r'\(cfg\)#\s*$', r'>\s*$']):
         telnet_session.sendline('enable')
@@ -53,7 +71,11 @@ def get_configuration(telnet_session, privilege_mode_password: str):
     config = ''
     while True:
         m = telnet_session.expect(
-                [r'\(cfg\)#\s*$', '----- more ----- Press Q or Ctrl+C to break -----']
+                [
+                    r'\(cfg\)#\s*$',
+                    r'----- more ----- Press Q or Ctrl\+C to break -----',
+                    pexpect.TIMEOUT
+                ]
             )
         config += telnet_session.before.decode('utf-8')
         if m == 0:
@@ -62,61 +84,102 @@ def get_configuration(telnet_session, privilege_mode_password: str):
             telnet_session.sendline(' ')
     return config
 
-    # wii - После преобразования с битовой строки остаются символы:
-    wii = '\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 ' \
-          '\x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08\x08 \x08'
 
-    # --------------------------Сравнение конфигураций-------------------------------
-    trfl = diff_config(name, cfg, 'asw')
-    t.write(b'config tffs\n')
-    if trfl:
-        # ------------------------------РАБОТА С TFTP----------------------------------
-        if tftp:
-            command_to_copy = str('copy startcfg.txt  ' + zte_name + '.txt \n').encode('ascii')
-            # Копирование файла на коммутаторе
-            t.write(command_to_copy)
-            time.sleep(1)
-            output = str(t.read_until(b'bytes copied', timeout=3))
-            if bool(findall(r'bytes copied', output)):
-                upload(t, zte_name, name, ip)                        # ЗАГРУЗКА ПО TFTP
-            elif bool(findall(r'File exists', output)):
-                delete_file = str('remove ' + zte_name + '.txt \n').encode('ascii')  # Удалить файл после передачи
-                t.write(delete_file)
-                t.read_until(b'[Yes|No]:', timeout=1)
-                t.write(b'Yes\n')
-                t.write(command_to_copy)
-                t.read_until(b'bytes copied', timeout=3)
-                upload(t, zte_name, name, ip)
-            else:
-                t.write(b'cd cfg\n')
-                time.sleep(1)
-                command_to_copy = str('copy startrun.dat  ' + zte_name + '.txt \n').encode('ascii')
-                # Копирование файла на коммутаторе
-                t.write(command_to_copy)
-                time.sleep(3)
-                upload(t, zte_name, name, ip)
-                if ip != '172.30.0.73':
-                    elog("Файл конфигурации с именем \'startcfg.txt/startrun.dat\' не найден.", ip, name)
-        # -------------------------------ОТПРАВКА ПО FTP----------------------------------
-        elif not tftp:
-            dir_name = str('ftp 10.20.0.14 asw/' + name.strip() + '/' + timed + 'startrun.dat upload /cfg/startrun.dat username svi password q7TP6GwCS%c3\n\n').encode('ascii')
-            t.write(dir_name)
-            time.sleep(5)
-            output = str(t.read_very_eager().decode('ascii'))
-            if bool(findall(r'uploaded', output)):
-                pass
-            elif bool(findall(r'([данные])', output)):
-                elog("Некорректные данные аутентификации", ip, name)
-            elif bool(findall(r'No such file or directory (0x2)', output)):
-                elog("Неправильный путь на стороне коммутатора", ip, name)
-            elif bool(findall(r'No such file or directory', output)):
-                elog("Неправильный путь на стороне сервера", ip, name)
-            else:
-                elog("Время ожидания истекло", ip, name)
+def backup(telnet_session, device_ip: str, device_name: str, backup_group: str, privilege_mode_password: str):
+    """
+    Загрузка файла конфигурации на удаленный сервер
+    """
+    telnet_session.sendline('\n')
+    user_level = telnet_session.expect(
+        [
+            r'>$',
+            r'\(cfg\)#\s*$',
+            r'\(cfg-tffs\)#\s*$'
+        ]
+    )
+    if user_level == 0:
+        telnet_session.sendline('enable')
+        telnet_session.expect('pass')
+        telnet_session.sendline(privilege_mode_password)
+        telnet_session.expect(r'\(cfg\)#\s*$')
+        user_level = 1
+    if user_level == 1:
+        telnet_session.sendline('config tffs')
+        telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+
+    # Проверка на доступность протокола ftp
+    telnet_session.sendline('ftp')
+    ftp_enable = telnet_session.expect(
+        [
+            r'Command not found',           # 0 - ftp недоступен
+            r'Parameter not enough',        # 1 - ftp доступен
+            r'Permission denied'            # 2 - доступ запрещен
+            r'\(cfg-tffs\)#\s*$',           # 3 - точка выхода
+        ]
+    )
+
+    if ftp_enable == 0:  # No ftp -> TFTP
+        telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+        telnet_session.sendline(f'copy startcfg.txt {device_name}_startcfg.txt')  # Копирование файла на коммутаторе
+        file_to_copy = f'{timed}_startrun.txt'
+        copy_status = telnet_session.expect(
+            [
+                'bytes copied',         # 0 - успешно
+                'File exists'           # 1
+                'File does not exist',  # 2
+            ]
+        )
+        telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+
+        if copy_status == 1:    # Файл уже существует
+            telnet_session.sendline(f'remove {device_name}_startcfg.txt')
+            telnet_session.sendline(f'Yes')
+            telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+            telnet_session.sendline(f'copy startcfg.txt {device_name}_startcfg.txt')  # Копирование файла на коммутаторе
+            telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+        elif copy_status == 2:  # Файл не найден
+            telnet_session.sendline('cd cfg')   # Меняем директорию
+            telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+            telnet_session.sendline(f'copy startrun.dat {device_name}_startrun.dat')
+            file_to_copy = f'/cfg/{device_name}_startrun.dat'
+
+        return tftp_upload(telnet_session, device_name, device_ip, file_to_copy, backup_group)
+
+    elif ftp_enable == 1:  # FTP
+        telnet_session.expect(r'\(cfg-tffs\)#\s*$')
+        # Если нет папки - создаем
+        if not os.path.exists(f'{ftp_directory}/{backup_group}/{device_name}'):
+            os.makedirs(f'{ftp_directory}/{backup_group}/{device_name}')
+
+        # Отправляем файл конфигурации
+        telnet_session.sendline(f'ftp {backup_server_ip} {backup_group}/{device_name}/{timed}_startrun.dat upload '
+                                f'/cfg/startrun.dat username {ftp_user} password {ftp_password}')
+
+        upload_status = telnet_session.expect(
+            [
+                r'bytes uploaded',                       # 0 - успешно
+                r'No such file or directory',            # 1
+                r'No such file or directory \(0',        # 2
+                r'Command not found',                    # 3
+                r'\(cfg-tffs\)#\s*$',                    # 4 - точка выхода
+                pexpect.TIMEOUT                          # 5
+            ]
+        )
+
+        if upload_status == 1:
+            elog(f'Директория отсутствует: {ftp_directory}/{backup_group}/{device_name}', device_ip, device_name)
+        elif upload_status == 2:
+            elog(f'Файл /cfg/startrun.dat Отсутствует на данном устройстве', device_ip, device_name)
+        elif upload_status == 3:
+            elog(f'Команда не найдена', device_ip, device_name)
+        elif upload_status == 5:
+            telnet_session.sendcontrol('C')  # Прерываем
+            elog('Таймаут при подключении к серверу ', device_ip, device_name)
         else:
-            elog("Неправильно задан ключ \'noftp\'", ip, name)
-    t.write(b'exit\n')
-    t.write(b'exit\n')
-    t.write(b'exit\n')
+            elog(f'{telnet_session.before.decode("utf-8")}', device_ip, device_name)
 
-# zte('172.30.0.73', 'SVSL-961-Eroshenko9-ASW1', True)
+        return True if not upload_status else False
+
+    elif ftp_enable == 2:
+        elog(f'Запрещен доступ к {ftp_directory}/{backup_group}/{device_name}', device_ip, device_name)
+    return False

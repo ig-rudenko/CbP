@@ -136,40 +136,37 @@ class TelnetConnect:
         connected = False
         self.telnet_session = pexpect.spawn(f"telnet {self.ip}")
         try:
-            for login, password in zip(self.login, self.password):
-                while not connected:    # Если не авторизировались
+            for login, password in zip(self.login + ['admin'], self.password + ['admin']):
+                while not connected:  # Если не авторизировались
                     login_stat = self.telnet_session.expect(
                         [
                             r"[Ll]ogin(?![-\siT]).*:\s*$",  # 0
-                            r"[Uu]ser\s(?![lfp]).*:\s*$",   # 1
-                            r"[Nn]ame.*:\s*$",              # 2
-                            r'[Pp]ass.*:\s*$',              # 3
-                            r'Connection closed',           # 4
-                            r'Unable to connect',           # 5
-                            r']$',                          # 6
-                            r'>\s*$',                       # 7
-                            r'#\s*$',                       # 8
+                            r"[Uu]ser\s(?![lfp]).*:\s*$",  # 1
+                            r"[Nn]ame.*:\s*$",  # 2
+                            r'[Pp]ass.*:\s*$',  # 3
+                            r'Connection closed',  # 4
+                            r'Unable to connect',  # 5
+                            r'[#>\]]\s*$'  # 6
                         ],
                         timeout=20
                     )
                     if login_stat < 3:
-                        self.telnet_session.sendline(login)     # Вводим логин
-                        continue                                # Ищем следующую строку
+                        self.telnet_session.sendline(login)  # Вводим логин
+                        continue
                     if 4 <= login_stat <= 5:
-                        print("    Telnet недоступен!")
+                        print(f"    Telnet недоступен! {self.device_name} ({self.ip})")
                         return False
                     if login_stat == 3:
                         self.telnet_session.sendline(password)  # Вводим пароль
-                        break
-                    if login_stat >= 6:                         # Если был поймал символ начала ввода команды
-                        connected = True                        # Подключились
-                        break                                   # Выход из цикла
+                    if login_stat >= 6:  # Если был поймал символ начала ввода команды
+                        connected = True  # Подключились
+                    break  # Выход из цикла
 
                 if connected:
                     break
 
             else:  # Если не удалось зайти под логинами и паролями из списка аутентификации
-                print('    Неверный логин или пароль!')
+                print(f'    Неверный логин или пароль! {self.device_name} ({self.ip})')
                 return False
 
             # Подключаемся к базе данных и смотрим, есть ли запись о вендоре для текущего оборудования
@@ -280,6 +277,7 @@ class TelnetConnect:
                 telnet_session=self.telnet_session,
                 privilege_mode_password=self.privilege_mode_password
             )
+            return self.configuration_str
 
     def config_diff(self):
         return diff_config(self.device_name, self.configuration_str)
@@ -299,5 +297,13 @@ class TelnetConnect:
                 device_name=self.device_name,
                 login=self.login[0],
                 password=self.password[0],
+                backup_group=self.backup_group
+            )
+        if 'zte' in self.vendor:
+            return zte.backup(
+                telnet_session=self.telnet_session,
+                device_ip=self.ip,
+                device_name=self.device_name,
+                privilege_mode_password=self.privilege_mode_password,
                 backup_group=self.backup_group
             )
