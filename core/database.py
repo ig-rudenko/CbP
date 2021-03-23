@@ -2,7 +2,7 @@ import sqlite3
 from configparser import ConfigParser
 import sys
 import os
-from control.tabulate import tabulate
+from core.tabulate import tabulate
 
 conf = ConfigParser()
 conf.read(f'{sys.path[0]}/cbp.conf')

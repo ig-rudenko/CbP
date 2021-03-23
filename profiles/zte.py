@@ -2,7 +2,7 @@ import shutil
 import sys
 import os
 from datetime import datetime
-from control import logs
+from core import logs
 import pexpect
 from configparser import ConfigParser
 
@@ -11,7 +11,11 @@ timed = str(datetime.now())[0:10]   # текущая дата 'yyyy-mm-dd'
 cfg = ConfigParser()
 cfg.read(f'{sys.path[0]}/cbp.conf')
 ftp_directory = cfg.get('FTP', 'directory')
+if not os.path.exists(ftp_directory):
+    os.makedirs(ftp_directory)
 tftp_directory = cfg.get('TFTP', 'directory')
+if not os.path.exists(tftp_directory):
+    os.makedirs(tftp_directory)
 ftp_user = cfg.get('FTP', 'username')
 ftp_password = cfg.get('FTP', 'password')
 backup_server_ip = cfg.get('Main', 'backup_server_ip')

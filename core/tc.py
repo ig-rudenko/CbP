@@ -1,11 +1,11 @@
 import pexpect
 from re import findall
 import sys
-from profiles import huawei_msan, zyxel, zte, iskratel_slot
+from profiles import huawei_msan, zyxel, zte, iskratel_slot, cisco
 import yaml
 import ipaddress
-from control.database import DataBase
-from control.diff_config import diff_config
+from core.database import DataBase
+from core.diff_config import diff_config
 
 root_dir = sys.path[0]
 
@@ -360,6 +360,10 @@ class TelnetConnect:
             self.configuration_str = iskratel_slot.get_configuration(
                 telnet_session=self.telnet_session
             )
+        if 'cisco' in self.vendor:
+            self.configuration_str = cisco.get_configuration(
+                telnet_session=self.telnet_session
+            )
         return self.configuration_str
 
     def config_diff(self) -> bool:
@@ -404,5 +408,12 @@ class TelnetConnect:
                 device_ip=self.ip,
                 user=self.login[0],
                 password=self.password[0],
+                backup_group=self.backup_group
+            )
+        if 'cisco' in self.vendor:
+            return cisco.backup(
+                telnet_session=self.telnet_session,
+                device_ip=self.ip,
+                device_name=self.device_name,
                 backup_group=self.backup_group
             )

@@ -7,14 +7,15 @@ import re
 import ftplib
 import os
 import sys
-from control import logs
+from core import logs
 
 
 conf = ConfigParser()
 conf.read(f'{sys.path[0]}/cbp.conf')
 backup_server_ip = conf.get('Main', 'backup_server_ip')     # IP адрес сервера бэкапов
 backup_dir = conf.get('Path', 'backup_dir')                 # Полный путь к папке  бэкапов
-
+if not os.path.exists(backup_dir):
+    os.makedirs(backup_dir)
 
 def elog(info, devices_ip, name):
     """

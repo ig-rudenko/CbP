@@ -5,10 +5,10 @@ from concurrent.futures import ThreadPoolExecutor
 import subprocess
 from datetime import datetime
 import sys
-from control import logs
+from core import logs
 from configparser import ConfigParser
-from control.database import DataBase
-from control.tc import TelnetConnect
+from core.database import DataBase
+from core.tc import TelnetConnect
 
 start_time = datetime.now()
 conf = ConfigParser()
