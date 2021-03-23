@@ -4,7 +4,7 @@
 import pexpect
 from re import findall
 import sys
-from profiles import huawei_msan, zyxel, zte
+from profiles import huawei_msan, zyxel, zte, iskratel_slot
 import yaml
 import ipaddress
 from control.database import DataBase
@@ -243,6 +243,9 @@ class TelnetConnect:
                     if 'ZyNOS version' in version:
                         self.vendor = 'zyxel'
 
+                if 'iskratel' in version.lower():
+                    self.vendor = 'iskratel'
+
                 # После того, как определили тип устройства, обновляем таблицу базы данных
                 db.update(
                     ip=self.ip,
@@ -261,8 +264,6 @@ class TelnetConnect:
             self.configuration_str = huawei_msan.get_configuration(
                 telnet_session=self.telnet_session
             )
-            return self.configuration_str
-
         if 'zyxel' in self.vendor:
             self.configuration_str = zyxel.get_configuration(
                 ip=self.ip,
@@ -270,14 +271,16 @@ class TelnetConnect:
                 login=self.login[0],
                 password=self.password[0]
             )
-            return self.configuration_str
-
         if 'zte' in self.vendor:
             self.configuration_str = zte.get_configuration(
                 telnet_session=self.telnet_session,
                 privilege_mode_password=self.privilege_mode_password
             )
-            return self.configuration_str
+        if 'iskratel' in self.vendor:
+            self.configuration_str = iskratel_slot.get_configuration(
+                telnet_session=self.telnet_session
+            )
+        return self.configuration_str
 
     def config_diff(self):
         return diff_config(self.device_name, self.configuration_str)
@@ -305,5 +308,13 @@ class TelnetConnect:
                 device_ip=self.ip,
                 device_name=self.device_name,
                 privilege_mode_password=self.privilege_mode_password,
+                backup_group=self.backup_group
+            )
+        if 'iskratel' in self.vendor:
+            return iskratel_slot.backup(
+                device_name=self.device_name,
+                device_ip=self.ip,
+                user=self.login[0],
+                password=self.password[0],
                 backup_group=self.backup_group
             )

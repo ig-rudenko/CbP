@@ -1,183 +1,123 @@
 #! /usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import telnetlib
-import datetime
+from datetime import datetime
+from configparser import ConfigParser
 import re
-from diff_config import diff_config
 import ftplib
 import os
+import sys
 from control import logs
 
 
-def iskratel_slot(devices_ip, name):
-    '''
-    Функция бэкапа конфига с плат Iskratel.
-    Аргументы: ip платы(str), имя платы(str).
-    '''
+conf = ConfigParser()
+conf.read(f'{sys.path[0]}/cbp.conf')
+backup_server_ip = conf.get('Main', 'backup_server_ip')     # IP адрес сервера бэкапов
+backup_dir = conf.get('Path', 'backup_dir')                 # Полный путь к папке  бэкапов
 
-    ### Логи ###
-    def elog(info, devices_ip, name):
 
-        '''
-        Функция логирования.
-        Аргументы: текст ошибки(str), ip платы(str), имя платы(str).
-        '''
-        logs.error_log.error("%s-> %s: %s" % (devices_ip.ljust(15, '-'), name, info))
-    ### / ###
+def elog(info, devices_ip, name):
+    """
+    Функция логирования.
+    Аргументы: текст ошибки(str), ip платы(str), имя платы(str).
+    """
+    logs.error_log.error("%s-> %s: %s" % (devices_ip.ljust(15, '-'), name, info))
 
-    ### FTP download ###
 
-    def ftp_download(start_path, local_path):
-        '''
-        Функция построения дерева директорий и скачивания всех файлов в них.
-        Аргументы: начальный путь на ftp(str), начальный локальный путь для записи(str).
-        '''
-
-        try:
-            ftp.cwd(start_path)
-        except Exception as exc:
-            elog("Ошибка при переходе в директорию " + start_path + ': ' + str(exc) , devices_ip, name)
-            pass
-        ls = []
-        ftp.dir(ls.append)
-        for line in ls:
-            if line.startswith('d') and not line.endswith('.'):
-                dir = re.search(r'\S*$', line)
-                try:
-                    os.mkdir(local_path + '/' + dir.group(0))
-                    print(name + '    найдена папка ' + dir.group(0))
-                    ftp_download(start_path + '/' + dir.group(0), local_path + '/' + dir.group(0))
-                except Exception as exc:
-                    elog('Ошибка создания директории ' + dir.group(0) + ': ' + str(exc), devices_ip, name)
-                    pass
-            if line.startswith('-'):
-                try:
-                    file = re.search(r'\S*$', line)
-                    print(name + '    найден файл ' + file.group(0))
-                    with open (local_path + '/' + file.group(0), 'wb') as local_file:
-                        ftp.retrbinary('RETR ' + file.group(0), local_file.write)
-                except Exception as exc:
-                    elog('Ошибка при скачивании файла ' + file.group(0) + ': ' + str(exc), devices_ip, name)
-                    pass
-        return
-    ### / ###
-
-    now = datetime.datetime.now()
-    print(name + '    старт')
-    ### Юзернейм и пароль ###
-    user = 'sysadmin'
-    with open('/etc/svi_password.cfg', 'r') as f:
-        master_password = f.readlines()
-        for find_pass in master_password:
-            try:
-                if user and 'iskratel_slot' in find_pass:
-                    password = str(find_pass.split(' ')[1]).encode('ascii')
-                    en_user = user.encode('ascii')
-            except Exception as exc:
-                elog('Пароль не найден: ' + str(exc), devices_ip, name)
-                return
-    ### / ###
-
-    ### Логин ###
-    t = telnetlib.Telnet(devices_ip)
-    output = t.expect([b'user id :'], timeout=2)
-    if bool(re.findall(r'user id :', output[2].decode('ascii'))) == True:
-        t.write(en_user + b'\n')
-    else:
-        elog('Не найдена строка ввода логина', devices_ip, name)
-        return
-    output = t.expect([b'password:'], timeout=2)
-    if bool(re.findall(r'password:', output[2].decode('ascii'))) == True:
-        t.write(password + b'\n')
-    else:
-        elog('Не найдена строка ввода пароля', devices_ip, name)
-        return
-    ### / ###
-
-    ### Чтение конфигурации ###
-    output = t.expect([b'mBAN>'], timeout=2)
-    if bool(re.findall(r'mBAN>', output[2].decode('ascii'))) == True:
-        t.write(b'show system config\n')
-        print(name + '    логин успешен')
-    else:
-        elog('Не найдена строка приглашения',devices_ip, name)
-        return
-    cfg = []
-    i = 1
-    check = (b'1', b'2', b'3')
-    while 'mBAN>' not in check[2].decode('ascii'):
-        check = t.expect([b'Press any key to continue or Esc to stop scrolling.', b'mBAN>'], timeout=0.2)
-        t.write(b' ')
-        cfg.append(check[2].decode('ascii').replace('\r\nPress any key to continue or Esc to stop scrolling.', ''))
-        i+=1
-        if i > 110:
-            print(name + '    бесконечный цикл конфига')
+def get_configuration(telnet_session):
+    telnet_session.sendline('show system config')
+    saved_config = ''
+    while True:
+        m = telnet_session.expect(
+            [
+                r"Press any key to continue or Esc to stop scrolling\.",  # 0 - продолжаем
+                r'>\s*$'  # 1 - выход
+            ]
+        )
+        saved_config += telnet_session.before.decode('utf-8')
+        if m == 0:
+            telnet_session.sendline(' ')
+        else:
             break
-#    try:
-#        while i < 30:
-#            output = t.expect([b'Press any key to continue or Esc to stop scrolling.'], timeout=0.2)
-#            if bool(re.findall(r'Press any key to continue or Esc to stop scrolling.', output[2].decode('ascii'))) == True:
-#                cfg.append(output[2].decode('ascii').replace('\r\nPress any key to continue or Esc to stop scrolling.', ''))
-#                t.write(b' ')
-#            elif bool(re.findall(r'mBAN>$', output[2].decode('ascii'))) == True:
-#                cfg.append(output[2].decode('ascii').replace('\r\nPress any key to continue or Esc to stop scrolling.', ''))
-#                break
-#            elif if bool(re.findall(r'Press any key to continue or Esc to stop scrolling.', output[2].decode('ascii'))) == False:
-#                
-#            i+=1
-#            print(i)
-#    except Exception as exc:
-#        elog('Ошибка чтения конфигурации: ' + str(exc),devices_ip, name)
-#        return
-    ### / ###
+    # Урезаем динамическую информацию
+    cut1 = saved_config.find('Basic System data')
+    cut2 = saved_config.find('IP routing-running')
+    cut3 = saved_config.find('Bridge status:')
+    cut4 = saved_config.find('Mactable for all interfaces:')
+    cut5 = saved_config.find('VLANs registered in system:')
+    cut6 = saved_config.find('bridge poll load')
+    cut7 = saved_config.find('calculated discarding probabilities')
+    cut8 = saved_config.find('Status and summary statistic DHCP RA:')
+    cut9 = saved_config.find('Opt82 and statistics for each interface:')
+    cut10 = saved_config.find('Status and summary statistic of PPPoE IA:')
+    cut11 = saved_config.find('Show PPPoE specific information for each interface:')
+    cut12 = saved_config.find('mBAN>')
+    saved_config = saved_config[cut1:cut2] + saved_config[cut3:cut4] + saved_config[cut5:cut6] + \
+                   saved_config[cut7:cut8] + saved_config[cut9:cut10] + saved_config[cut11:cut12]
+    return saved_config
 
-    t.write(b'exit\n')  # logout 
 
-    ### Первод конфига в строку, удаление блоков с динамическими данными, вызов функции сравнения ###
-    cfg = ''.join(cfg).replace('\r', '')
-    cut1 = cfg.find('Basic System data')
-    cut2 = cfg.find('IP routing-running')
-    cut3 = cfg.find('Bridge status:')
-    cut4 = cfg.find('Mactable for all interfaces:')
-    cut5 = cfg.find('VLANs registered in system:')
-    cut6 = cfg.find('bridge poll load')
-    cut7 = cfg.find('calculated discardind probabilities')
-    cut8 = cfg.find('Status and summary statistic DHCP RA:')
-    cut9 = cfg.find('Opt82 and statistics for each interface:')
-    cut10 = cfg.find('Status and summary statistic of PPPoE IA:')
-    cut11 = cfg.find('Show PPPoE specific information for each interface:')
-    cut12 = cfg.find('mBAN>')
-    cfg = cfg[cut1:cut2] + cfg[cut3:cut4] + cfg[cut5:cut6] + cfg[cut7:cut8] + cfg[cut9:cut10] + cfg[cut11:cut12]
-    print(name + '    конфиг собран и подрезан')
+def ftp_download(start_path: str, local_path: str, ftp, device_name: str, device_ip: str) -> bool:
+    """
+    Функция построения дерева директорий и скачивания всех файлов в них.
+    Аргументы: начальный путь на ftp(str), начальный локальный путь для записи(str).
+
+    :param start_path: текущий путь на удаленном устройстве
+    :param local_path: путь на удаленном сервере
+    :param ftp: текущая сессия FTP
+    :param device_name: имя устройства
+    :param device_ip: IP адрес устройства
+    """
+
     try:
-        diff_result = diff_config(name, cfg, 'iskratel')
+        ftp.cwd(start_path)     # Переходим в папку
     except Exception as exc:
-        elog('Ошибка функции сравнения: ' + str(exc), devices_ip, name)
-        return
-     ### / ###
+        elog("Ошибка при переходе в директорию " + start_path + ': ' + str(exc), device_ip, device_name)
+        return False
+    ls = []     # Список файлов в папке
+    ftp.dir(ls.append)
+    status = True   # Отсутствие ошибок при загрузки
+    for line in ls:
+        if line.startswith('d') and not line.endswith('.'):  # Если обнаружили папку
+            folder = re.search(r'\S*$', line).group(0)  # Имя папки
+            try:
+                if not os.path.exists(f"{local_path}/{folder}"):    # Если нет локальной папки с таким именем
+                    os.mkdir(f"{local_path}/{folder}")
+                print(device_name + '    найдена папка ' + f"{start_path}/{folder}")
+                # Рекурсия - передаем найденную папку в функцию
+                status = ftp_download(f"{start_path}/{folder}", f"{local_path}/{folder}", ftp, device_name, device_ip)
+            except Exception as exc:
+                elog('Ошибка создания директории ' + folder + ': ' + str(exc), device_ip, device_name)
+                return False
+        if line.startswith('-'):    # Если найден файл
+            file = re.search(r'\S*$', line).group(0)    # Имя файла
+            print(device_name + '    найден файл ' + f"{start_path}/{file}")
+            try:
+                with open(local_path + '/' + file, 'wb') as local_file:  # Создаем/открываем файл в бинарном режиме
+                    ftp.retrbinary('RETR ' + file, local_file.write)    # Скачиваем файл
+            except Exception as exc:
+                elog('Ошибка при скачивании файла ' + f"{start_path}/{file}" + ': ' + str(exc), device_ip, device_name)
+                return False
+    return status
 
-    if diff_result == True:
 
-        ### FTP ###
-        try:
-            with ftplib.FTP(devices_ip) as ftp:
-                ftp.login(user=user, passwd=password.decode('ascii'))
-                ftp.cwd('/tffs')
-                now = now.strftime('%d-%m-%Y_%H-%M')
-                start_local_path = '/srv/config_mirror/dsl/' + name + '/' + now
-                os.mkdir(start_local_path)
-                my_folders = re.findall(r'M[A-Z,0-9]*', ' '.join(ftp.nlst()))
-                for my_folder in my_folders:
-                    print(name + '    найдена М папка ' + my_folder)
-                    local_path = start_local_path + '/' + str(my_folder).strip('[]').strip("'")
-                    os.mkdir(local_path)
-                    download = ftp_download('/tffs/'+str(my_folder).strip('[]').strip("'"), local_path)
-                ftp.quit()
-        except Exception as exc:
-            elog('Ошибка FTP: ' + str(exc), devices_ip, name)
-            ftp.quit()
-            return
-        ### / ###
-    print(name + '    скрипт завешён')
-#test =  iskratel_slot('192.168.188.43', 'test_isk')
+def backup(device_ip: str, device_name: str, user: str, password: str, backup_group: str) -> bool:
+    try:
+        with ftplib.FTP(device_ip) as ftp:
+            ftp.login(user=user, passwd=password)
+            ftp.cwd('/tffs')
+            now = datetime.now().strftime("%d-%m-%Y")
+            my_folders = re.findall(r'M[A-Z,0-9]*', ' '.join(ftp.nlst()))
+            for my_folder in my_folders:
+                print(device_name + '    найдена М папка ' + my_folder)
+                # папка для хранения файлов конфигурации
+                local_path = f'{backup_dir}/{backup_group}/{device_name}/{now}/{my_folder}'
+                if not os.path.exists(local_path):
+                    os.makedirs(local_path)  # Создаем, если нет
+                # Скачиваем все из данной папки
+                return ftp_download(f'/tffs/{my_folder}', local_path, ftp, device_name, device_ip)
+    except Exception as exc:
+        elog('Ошибка FTP: ' + str(exc), device_ip, device_name)
+        return False
+
+
