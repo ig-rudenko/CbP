@@ -40,7 +40,11 @@ def get_configuration(telnet_session):
 def backup(telnet_session, device_ip: str, device_name: str, backup_group: str) -> bool:
     telnet_session.sendline('\n')
     priority = telnet_session.expect(
-        [r'\(config\)#', r'\S#', '>']
+        [
+            r'\(config\)#',  # 0
+            r'\S#',          # 1
+            '>'              # 2
+        ]
     )
     if priority == 2:
         telnet_session.sendline('enable')
@@ -49,10 +53,10 @@ def backup(telnet_session, device_ip: str, device_name: str, backup_group: str) 
         telnet_session.sendline('config')
 
     timed = str(datetime.now())[0:10]   # yyyy-mm-dd
-    # if not os.path.exists(f'{backup_dir}/{vendor}/{device_name}'):
-    #     os.makedirs(f'{backup_dir}/{vendor}/{device_name}')
+    if not os.path.exists(f'{backup_dir}/{backup_group}/{device_name}'):
+        os.makedirs(f'{backup_dir}/{backup_group}/{device_name}')
     telnet_session.sendline(
-        f"backup configuration ftp {backup_server_ip} {backup_group}/{timed}-data.dat"
+        f"backup configuration ftp {backup_server_ip} {backup_group}/{device_name}/{timed}-data.dat"
     )
     telnet_session.sendline('y')
     bcode = telnet_session.expect(
@@ -60,7 +64,7 @@ def backup(telnet_session, device_ip: str, device_name: str, backup_group: str) 
             'Backing up files is successful',                       # 0
             'Failure cause: The path does not',                     # 1
             'The file with the same name exists on FTP server',     # 2
-            'Backing up files faila'                                # 3
+            'Backing up files fail'                                 # 3
         ]
     )
     if bcode == 1:
