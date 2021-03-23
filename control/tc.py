@@ -1,6 +1,3 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-
 import pexpect
 from re import findall
 import sys
@@ -14,14 +11,25 @@ root_dir = sys.path[0]
 
 
 def ip_range(ip_input_range_list: list):
-    result = []
+    """
+    Преобразует диапазон IP адресов в список каждого из них
+        192.168.0.1/24    -> ['192.168.0.1', '192.168.0.2', ... '192.168.0.223', '192.168.0.254']
+
+        192.168.0.1-224   -> ['192.168.0.1', '192.168.0.2', ... '192.168.0.223', '192.168.0.224']
+
+        192.168.0-4.1-224 -> ['192.168.0.1', ... '192.168.0.224',
+                              '192.168.1.1', ... '192.168.1.224',
+                                             ...
+                              '192.168.4.1', ... '192.168.0.224']
+    """
+    result = []  # Итоговый список
     for ip_input_range in ip_input_range_list:
-        if '/' in ip_input_range:
+        if '/' in ip_input_range:   # Если в записи IP адреса указана маска подсети
             try:
-                ip = ipaddress.ip_network(ip_input_range)
+                ip = ipaddress.ip_network(ip_input_range)   # Пр
             except ValueError:
                 ip = ipaddress.ip_interface(ip_input_range).network
-            return [str(i) for i in list(ip.hosts())]
+            result += [str(i) for i in list(ip.hosts())]
         range_ = {}
         ip = ip_input_range.split('.')
         for num, oct in enumerate(ip, start=1):
@@ -44,16 +52,19 @@ def ip_range(ip_input_range_list: list):
 
 
 class TelnetConnect:
+    """
+    Взаимодействие с сетевым оборудованием посредством протокола TELNET
+    """
     def __init__(self, ip: str, device_name: str = ''):
         self.configuration_str = None
         self.device_name = device_name
         self.ip = ip
-        self.auth_mode = 'default'
+        self.auth_mode = 'database'
         self.auth_file = f'{root_dir}/auth.yaml'
         self.auth_group = None
-        self.login = []
-        self.password = []
-        self.privilege_mode_password = 'admin'
+        self.login = ['admin']
+        self.password = ['admin']
+        self.privilege_mode_password = 'enable'
         self.telnet_session = None
         self.vendor = ''
         self.interfaces = []
@@ -65,28 +76,80 @@ class TelnetConnect:
         self.cable_diag = None
         self.backup_group = 'default'
 
-    def set_authentication(self, mode: str = 'default', auth_file: str = f'{root_dir}/auth.yaml',
-                           auth_group: str = None, login=None, password=None, privilege_mode_password: str = None) -> None:
-        self.auth_mode = mode
-        self.auth_file = auth_file
-        self.auth_group = auth_group
+    def set_authentication(self, mode: str = 'database', auth_file: str = f'{root_dir}/auth.yaml',
+                           auth_group: str = None, login=None, password=None, privilege_mode_password: str = None):
+        """
+        Задает логин и пароль, в зависимости от выбранных параметров
+        """
+        self.auth_mode = mode           # Тип авторизации
+        self.auth_file = auth_file      # Файл авторизации
+        self.auth_group = auth_group    # Группа авторизации
 
-        if self.auth_mode.lower() == 'default' or self.auth_mode.lower() == 'group':
+        if mode == 'database':
+            """
+            Считывает информацию о параметрах авторизации из имеющейся базы данных, указанной в файле конфигурации
+            """
+            db = DataBase()
+            item = db.get_item(ip=self.ip)
+            if item:
+                self.vendor = item[2]
+                self.auth_group = item[3]
+                self.backup_group = item[4] or 'default'
+                self.auth_mode = 'group'
+
+        if self.auth_mode.lower() == 'group':
+            """
+            Авторизация с помощью групп, находящихся в файле авторизации <auth_file>, ключ 'GROUPS'
+                <auth_file>
+                    GROUPS:
+                     ├ group1:
+                     │ ├ login: ...
+                     │ ├ password: ...
+                     │ └ privilege_mode_password: ...
+                     │
+                     └ group2:
+                       ├ login: ...
+                       ├ password: ...
+                       └ privilege_mode_password: ...
+            """
             try:
                 with open(self.auth_file, 'r') as file:
-                    auth_dict = yaml.safe_load(file)
-                self.login = ['admin'] if not self.auth_group else auth_dict['GROUPS'][self.auth_group.upper()]['login']
-                self.password = ['admin'] if not self.auth_group else auth_dict['GROUPS'][self.auth_group.upper()]['password']
-                self.login = self.login if isinstance(self.login, list) else [self.login]
-                self.password = self.password if isinstance(self.password, list) else [self.password]
-                if auth_dict['GROUPS'][self.auth_group.upper()].get('privilege_mode_password'):
-                    self.privilege_mode_password = auth_dict['GROUPS'][self.auth_group.upper()]['privilege_mode_password']
+                    auth_dict = yaml.safe_load(file)    # Преобразуем данные файла в словарь
+                iter_dict = auth_dict['GROUPS'][self.auth_group.upper()]    # Находим нужную группу
+                # Если имеется ключ 'login' то задаем переменной его значение в виде списка, иначе 'admin'
+                self.login = (iter_dict['login'] if isinstance(iter_dict['login'], list)
+                              else [iter_dict['login']]) if iter_dict.get('login') else ['admin']
+                # Если имеется ключ 'password' то задаем переменной его значение в виде списка, иначе 'admin'
+                self.password = (iter_dict['password'] if isinstance(iter_dict['password'], list)
+                                 else [iter_dict['password']]) if iter_dict.get('password') else ['admin']
+                # Если имеется ключ 'privilege_mode_password' то задаем переменной его значение, иначе 'enable'
+                self.privilege_mode_password = iter_dict['privilege_mode_password'] if iter_dict.get(
+                    'privilege_mode_password') else 'enable'
 
             except Exception:
-                self.login = ['admin']
-                self.password = ['admin']
+                pass
 
         if self.auth_mode.lower() == 'auto':
+            """
+            Авторизация с помощью поиска IP адреса оборудования или его имени в первой попавшейся группе,
+            ключи <devices_by_ip>, <devices_by_name>
+            находящихся в файле авторизации <auth_file>, ключ 'GROUPS'
+                <auth_file>
+                    GROUPS:
+                     ├ group1:
+                     │ ├ login: ...
+                     │ ├ password: ...
+                     │ ├ privilege_mode_password: ...
+                     │ ├ devices_by_ip: ...
+                     │ └ devices_by_name: ...
+                     │
+                     └ group2:
+                       ├ login: ...
+                       ├ password: ...
+                       ├ privilege_mode_password: ...
+                       ├ devices_by_ip: ...
+                       └ devices_by_name: ...
+            """
             try:
                 with open(self.auth_file, 'r') as file:
                     auth_dict = yaml.safe_load(file)
@@ -106,20 +169,32 @@ class TelnetConnect:
                             'privilege_mode_password') else 'admin'
 
                         break
-                else:
-                    self.login = ['admin']
-                    self.password = ['admin']
 
             except Exception:
-                self.login = ['admin']
-                self.password = ['admin']
+                pass
 
         if login and password:
+            """
+            Логин и пароль указаны явно
+            """
             self.login = login if isinstance(login, list) else [login]
             self.password = password if isinstance(password, list) else [password]
             self.privilege_mode_password = privilege_mode_password if privilege_mode_password else 'admin'
 
         if self.auth_mode == 'mixed':
+            """
+            Авторизация с использованием нескольких логинов и паролей, указанных в файле <auth_file> ключ 'MIXED'
+            <auth_file>
+                    MIXED:
+                     ├ login:
+                     │  - login1
+                     │  - login2
+                     │  - login3
+                     └ password:
+                        - password1
+                        - password2
+                        - password3
+            """
             try:
                 with open(self.auth_file, 'r') as file:
                     auth_dict = yaml.safe_load(file)
@@ -127,10 +202,12 @@ class TelnetConnect:
                 self.password = auth_dict['MIXED']['password']
 
             except Exception:
-                self.login = ['admin']
-                self.password = ['admin']
+                pass
 
     def connect(self) -> bool:
+        """
+        Подключаемся к оборудованию и определяем его вендор
+        """
         if not self.login or not self.password:
             self.set_authentication()
         connected = False
@@ -141,12 +218,12 @@ class TelnetConnect:
                     login_stat = self.telnet_session.expect(
                         [
                             r"[Ll]ogin(?![-\siT]).*:\s*$",  # 0
-                            r"[Uu]ser\s(?![lfp]).*:\s*$",  # 1
-                            r"[Nn]ame.*:\s*$",  # 2
-                            r'[Pp]ass.*:\s*$',  # 3
-                            r'Connection closed',  # 4
-                            r'Unable to connect',  # 5
-                            r'[#>\]]\s*$'  # 6
+                            r"[Uu]ser\s(?![lfp]).*:\s*$",   # 1
+                            r"[Nn]ame.*:\s*$",              # 2
+                            r'[Pp]ass.*:\s*$',              # 3
+                            r'Connection closed',           # 4
+                            r'Unable to connect',           # 5
+                            r'[#>\]]\s*$'                   # 6
                         ],
                         timeout=20
                     )
@@ -178,7 +255,7 @@ class TelnetConnect:
                 self.vendor = item[0][2]
 
             # Если нет записи о вендоре устройства, то определим его
-            if not self.vendor:
+            if not self.vendor or self.vendor == 'None':
                 self.telnet_session.sendline('show version')
                 version = ''
                 while True:
@@ -260,6 +337,9 @@ class TelnetConnect:
             return False
 
     def get_saved_configuration(self):
+        """
+        Считываем сохраненную конфигурацию у оборудования
+        """
         if 'huawei-msan' in self.vendor:
             self.configuration_str = huawei_msan.get_configuration(
                 telnet_session=self.telnet_session
@@ -282,10 +362,18 @@ class TelnetConnect:
             )
         return self.configuration_str
 
-    def config_diff(self):
+    def config_diff(self) -> bool:
+        """
+        Сравнивает конфигурацию на наличие изменений
+
+        :return: True - конфиги отличаются; False - конфиги идентичны
+        """
         return diff_config(self.device_name, self.configuration_str)
 
     def backup_configuration(self):
+        """
+        Копирует конфигурационный файл(ы) оборудования в директорию, указанную в файле конфигурации cbp.conf
+        """
         if 'huawei-msan' in self.vendor:
             return huawei_msan.backup(
                 telnet_session=self.telnet_session,

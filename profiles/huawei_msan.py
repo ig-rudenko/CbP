@@ -13,20 +13,25 @@ backup_server_ip = conf.get('Main', 'backup_server_ip')     # IP адрес се
 backup_dir = conf.get('Path', 'backup_dir')                 # Полный путь к папке  бэкапов
 
 
-# функция логгирования
 def elog(info, ip, name):
+    """функция логгирования"""
     logs.error_log.error("%s-> %s: %s" % (ip.ljust(15, '-'), name, info))
 
 
 def get_configuration(telnet_session):
     telnet_session.sendline('enable')
     telnet_session.sendline('config')
-    telnet_session.sendline('scroll 100')
+    telnet_session.sendline('scroll 100')   # Максимальное кол-во отображаемых строк
     telnet_session.sendline('display saved-configuration')
     telnet_session.expect('display saved-configuration')
     saved_config = ''
     while True:
-        m = telnet_session.expect([r"---- More \( Press \'Q\' to break \) ----", r'\(config\)#'])
+        m = telnet_session.expect(
+            [
+                r"---- More \( Press \'Q\' to break \) ----",   # 0 - продолжаем
+                r'\(config\)#'                                  # 1 - конец
+            ]
+        )
         saved_config += telnet_session.before.decode('utf-8')
         if m == 0:
             telnet_session.sendline(' ')
@@ -41,9 +46,9 @@ def backup(telnet_session, device_ip: str, device_name: str, backup_group: str) 
     telnet_session.sendline('\n')
     priority = telnet_session.expect(
         [
-            r'\(config\)#',  # 0
-            r'\S#',          # 1
-            '>'              # 2
+            r'\(config\)#',  # 0 - режим редактирования конфигурации
+            r'\S#',          # 1 - привилегированный режим
+            '>'              # 2 - пользовательский режим
         ]
     )
     if priority == 2:
