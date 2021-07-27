@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block header %}
+    All Devices
+    <a class="atuin-btn2" href="device/edit">Добавить устройство</a>
+{% endblock header %}
+{% block content %}
+    <form method="get">
+        {% csrf_token %}
+
+{#    <h2>Список оборудования</h2>#}
+    {% if devices.count > 0 %}
+    <table class="brd">
+        <tr>
+            <th>IP</th>
+            <th>Device name</th>
+            <th>Vendor</th>
+            <th>Auth group</th>
+            <th>Backup group</th>
+        </tr>
+        {% for d in devices %}
+        <tr>
+            <td>{{ d.ip }}</td>
+            <td>{{ d.device_name }}</td>
+            <td>{{ d.vendor }}</td>
+            <td>{{ d.auth_group_id }}</td>
+            <td>{{ d.backup_group_id }}</td>
+            <td><a class="no_decoration font20" href="device/edit/{{ d.id }}">✎</a> |
+                <a class="no_decoration" href="device/delete/{{ d.id }}">❌</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    </form>
+{% endblock content %}

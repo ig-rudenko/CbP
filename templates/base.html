@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{% static "css/styles.css" %}" />
+    <link rel="stylesheet" href="{% static "css/menu.css" %}" />
+    <title>{% block title %}Configuration backup Project{% endblock title %}</title>
+</head>
+<body>
+    <ul class="menu-main">
+        <li><a href="/devices" >Devices</a></li>
+        <li><a href="/auth_groups">Auth Groups</a></li>
+        <li><a href="/backup_groups">Backup Groups</a></li>
+    </ul>
+    <h1 class="center-div">{% block header %}{% endblock header %}</h1>
+    <div class="center-div">{% block content %}{% endblock content %}</div>
+    <div>{% block footer %}{% endblock footer %}</div>
+</body>
+</html>

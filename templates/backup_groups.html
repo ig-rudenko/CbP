@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block header %}
+    Backup Groups
+    <a class="atuin-btn2" href="backup_group/edit">Добавить группу</a>
+{% endblock header %}
+{% block content %}
+    <form method="get">
+        {% csrf_token %}
+{#    <h2>Созданные группы</h2>#}
+    {% if groups.count > 0 %}
+    <table class="brd">
+        <tr>
+            <th>Group name</th>
+        </tr>
+        {% for g in groups %}
+        <tr>
+            <td>{{ g.backup_group }}</td>
+            <td><a class="no_decoration font20" href="backup_group/edit/{{ g.id }}">✎</a> |
+                <a class="no_decoration" href="backup_group/delete/{{ g.id }}">❌</a></td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% endif %}
+    </form>
+{% endblock content %}

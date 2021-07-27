@@ -1,0 +1,149 @@
+body{
+    font-family: 'Ubuntu Condensed', sans-serif;
+}
+h1{color: navy;}
+img{width: 350px;}
+
+.center-div
+{
+     margin: auto;
+}
+
+.font20{
+    font-size: 20px;
+}
+
+.no_decoration{
+    text-decoration: none;
+}
+
+table {
+    font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif, serif;
+    font-size: 14px;
+    background: white;
+    max-width: 70%;
+    width: 70%;
+    border-collapse: collapse;
+    text-align: left;
+}
+th {
+    font-weight: normal;
+    color: #039;
+    border-bottom: 2px solid #6678b1;
+    padding: 10px 8px;
+}
+td {
+    color: #669; /*#669*/
+    padding: 9px 8px;
+    transition: .3s linear;
+}
+tr:hover td {
+    color: #040710;/*6699ff*/
+}
+
+
+text {
+  border-radius:10px;
+  border: 1px solid #eee;
+  transition: .3s border-color;
+}
+text:hover {
+  border: 1px solid #aaa;
+}
+
+
+
+
+/* КНОПКА INPUT*/
+
+.atuin-btn {
+    display: inline-flex;
+    margin: 10px;
+    text-decoration: none;
+    border: 2px solid #BFE2FF;
+    position: relative;
+    overflow: hidden;
+    font-size: 14px;
+    line-height: 20px;
+    padding: 12px 30px;
+    color: #FFF;
+    font-weight: bold;
+    text-transform: uppercase;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif, serif;
+    background: #337AB7;
+    transition: box-shadow 0.3s, transform 0.3s;
+    cursor: pointer;
+}
+.atuin-btn:hover,
+.atuin-btn:active,
+.atuin-btn:focus {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2), 0 16px 20px rgba(0,0,0,0.2);
+    color: #FFF;
+}
+.atuin-btn:before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(-45deg, transparent, rgba(191, 226, 255, 0.3), transparent);
+    transition: left 0.7s;
+}
+.atuin-btn:hover:before,
+.atuin-btn:active:before,
+.atuin-btn:focus:before {
+    left: 100%;
+}
+
+/* КОНЕЦ КНОПКИ */
+
+/* КНОПКА ДОБАВИТЬ */
+
+.atuin-btn2 {
+    display: inline-flex;
+    margin: 10px;
+    text-decoration: none;
+    position: relative;
+    font-size: 14px;
+    line-height: 10px;
+    padding: 12px 30px;
+    color: #FFF;
+    /*font-weight: bold;*/
+    text-transform: uppercase;
+    font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif, serif;
+    background: #337AB7;
+    cursor: pointer;
+    border: 2px solid #BFE2FF;
+}
+.atuin-btn2:hover,
+.atuin-btn2:active,
+.atuin-btn2:focus {
+    color: #FFF;
+}
+.atuin-btn2:after,
+.atuin-btn2:before {
+    position: absolute;
+    height: 4px;
+    left: 50%;
+    background: #337AB7;
+    bottom: -6px;
+    content: "";
+    transition: all 280ms ease-in-out;
+    width: 0;
+}
+.atuin-btn2:before {
+    top: -6px;
+}
+.atuin-btn2:hover:after,
+.atuin-btn2:hover:before,
+.atuin-btn2:active:after,
+.atuin-btn2:active:before,
+.atuin-btn2:focus:after,
+.atuin-btn2:focus:before {
+    width: 100%;
+    left: 0;
+}
+
+/* КОНЕЦ КНОПКИ ДОБАВИТЬ */
