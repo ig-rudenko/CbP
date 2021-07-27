@@ -99,14 +99,16 @@ def backup_group_delete(request, id):
 def devices(request):
     devices_all = Equipment.objects.all()
     for d in devices_all:
-        d.auth_group_id = AuthGroup.objects.get(id=d.auth_group_id).auth_group
-        d.backup_group_id = BackupGroup.objects.get(id=d.backup_group_id).backup_group
+        if d.auth_group_id:
+            d.auth_group_id = AuthGroup.objects.get(id=d.auth_group_id).auth_group
+        if d.backup_group_id:
+            d.backup_group_id = BackupGroup.objects.get(id=d.backup_group_id).backup_group
     return render(request, "devices.html", {"devices": devices_all})
 
 
 def device_edit(request, id: int = 0):
     try:
-        device_form = DevicesForm()
+
         if id:
             device = Equipment.objects.get(id=id)
             device_form = DevicesForm(initial={
@@ -115,6 +117,7 @@ def device_edit(request, id: int = 0):
                 'vendor': device.vendor
             })
         else:
+            device_form = DevicesForm()
             device = Equipment()
 
         if request.method == "POST":
@@ -122,15 +125,15 @@ def device_edit(request, id: int = 0):
             device.device_name = request.POST.get('device_name')
             device.vendor = request.POST.get('vendor')
             device.save()
-            auth_group = AuthGroup.objects.get(auth_group=request.POST.get('auth_group'))
+            auth_group = AuthGroup.objects.get(id=request.POST.get('auth_group'))
             auth_group.equipment_set.add(device, bulk=False)
-            backup_group = BackupGroup.objects.get(backup_group=request.POST.get('backup_group'))
+            backup_group = BackupGroup.objects.get(id=request.POST.get('backup_group'))
             backup_group.equipment_set.add(device, bulk=False)
             return HttpResponsePermanentRedirect("/devices")
         else:
 
             return render(request, "device_edit.html", {"form": device_form})
-    except AuthGroup.DoesNotExist:
+    except AuthGroup.DoesNotExist or BackupGroup.DoesNotExist:
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
