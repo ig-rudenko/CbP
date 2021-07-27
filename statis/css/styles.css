@@ -4,9 +4,11 @@ body{
 h1{color: navy;}
 img{width: 350px;}
 
-.center-div
+.center_
 {
-     margin: auto;
+    display: block;
+    margin: auto;
+    width: 50%;
 }
 
 .font20{
@@ -21,10 +23,10 @@ table {
     font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif, serif;
     font-size: 14px;
     background: white;
-    max-width: 70%;
-    width: 70%;
+    /*max-width: 70%;*/
+    /*width: 70%;*/
     border-collapse: collapse;
-    text-align: left;
+    text-align: center;
 }
 th {
     font-weight: normal;
