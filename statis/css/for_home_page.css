@@ -1,0 +1,19 @@
+.first {
+    cursor: pointer;
+    font-family: 'Ubuntu Condensed', sans-serif;
+    text-indent: 22px;
+    line-height: 33px;
+    border: 1px solid #d2d2d2;
+    font-size: 20px;
+}
+
+.first_blue {
+    font-family: 'Ubuntu Condensed', sans-serif;
+    cursor: pointer;
+    background: #669;
+    font-size: 18px;
+    color: white;
+    text-indent: 22px;
+    line-height: 33px;
+    border: 1PX SOLID #669;
+}

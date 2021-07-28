@@ -1,9 +1,18 @@
 {% extends "base.html" %}
 {% block content %}
-    <form method="post">
+    <form method="get">
         {% csrf_token %}
     {% for backup_group, devices in form.items %}
-        <h1>{{ backup_group }}</h1>
+        <p class="first"
+           id="first{{ backup_group }}"
+           onclick="first('{{ backup_group }}')">{{ backup_group }}</p>
+
+        <p class="first_blue"
+           id="first_yelloy{{ backup_group }}"
+           style="display:none"
+           onclick="first_yelloy('{{ backup_group }}')">{{ backup_group }}</p>
+
+        <div id="{{ backup_group }}" style="display:none">
             <table>
                 <tr><th>Имя</th><th>Конфигураций имеется</th><th>Последняя</th></tr>
             {% for device_name, c in devices.items %}
@@ -14,6 +23,26 @@
                 </tr>
             {% endfor %}
            </table>
+        </div>
     {% endfor %}
     </form>
+    <script>
+
+function first(s) {
+    document.getElementById(s).setAttribute("style", "opacity:1; transition: 1s; height: 100%;");
+    document.getElementById("first" + s).setAttribute("style", "display: none");
+    document.getElementById("first_yelloy" + s).setAttribute("style", "display: block");
+}
+
+function first_yelloy(s) {
+    document.getElementById(s).setAttribute("style", "display: none");
+    document.getElementById("first_yelloy" + s).setAttribute("style", "display: none");
+    document.getElementById("first" + s).setAttribute("style", "display: block");
+}
+
+</script>
 {% endblock content %}
+
+
+
+

@@ -11,9 +11,14 @@ from re import findall
 from datetime import date
 
 
-def login(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
+def check_superuser(request):
+    try:
+        if not User.objects.get(username=str(request.user)).is_superuser:
+            return 0
+        else:
+            return 1
+    except Exception:
+        return 0
 
 
 def test(request):
@@ -29,7 +34,9 @@ def test(request):
 
 
 def home(request):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
     dirs_list = {}
     cfg = ConfigParser()
     cfg.read(f'{sys.path[0]}/config')
@@ -53,11 +60,24 @@ def home(request):
                             if not last_date or date_file > last_date:
                                 last_date = date_file
                     dirs_list[backup_group][dev] += [last_date]
-    return render(request, 'home.html', {"form": dirs_list})
+    # try:
+    #     superuser = User.objects.get(username=str(request.user)).is_superuser
+    # except Exception:
+    #     superuser = 0
+    return render(
+        request,
+        'home.html',
+        {
+            "form": dirs_list,
+            'superuser': check_superuser(request)
+        }
+    )
 
 
 def download_file(request):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
     cfg = ConfigParser()
     cfg.read(f'{sys.path[0]}/config')
     backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
@@ -70,7 +90,9 @@ def download_file(request):
 
 
 def list_config_files(request):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
     backup_group = request.GET.get('bg')
     device_name = request.GET.get('dn')
     cfg = ConfigParser()
@@ -93,15 +115,23 @@ def list_config_files(request):
 
 
 def auth_groups(request):
-    login(request)
-    if not User.objects.get(username=str(request.user)).is_superuser:
-        return HttpResponsePermanentRedirect('/devices')
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
     groups = AuthGroup.objects.all()
     return render(request, "device_control/auth_groups.html", {"form": AuthGroupsForm, "groups": groups})
 
 
 def auth_group_edit(request, id: int = 0):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
     try:
         auth_group_form = AuthGroupsForm()
         if id:
@@ -129,7 +159,12 @@ def auth_group_edit(request, id: int = 0):
 
 
 def auth_group_delete(request, id):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
     try:
         group = AuthGroup.objects.get(id=id)
         group.delete()
@@ -139,13 +174,23 @@ def auth_group_delete(request, id):
 
 
 def backup_groups(request):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
     groups = BackupGroup.objects.all()
     return render(request, "device_control/backup_groups.html", {"form": BackupGroupsForm, "groups": groups})
 
 
 def backup_group_edit(request, id: int = 0):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
     try:
         backup_group_form = BackupGroupsForm()
         if id:
@@ -167,7 +212,12 @@ def backup_group_edit(request, id: int = 0):
 
 
 def backup_group_delete(request, id):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
     try:
         group = BackupGroup.objects.get(id=id)
         group.delete()
@@ -177,7 +227,12 @@ def backup_group_delete(request, id):
 
 
 def devices(request):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
     devices_all = Equipment.objects.all()
     for d in devices_all:
         if d.auth_group_id:
@@ -188,7 +243,13 @@ def devices(request):
 
 
 def device_edit(request, id: int = 0):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
+    check_superuser(request)
     try:
 
         if id:
@@ -220,7 +281,13 @@ def device_edit(request, id: int = 0):
 
 
 def device_delete(request, id):
-    login(request)
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
+    check_superuser(request)
     try:
         group = Equipment.objects.get(id=id)
         group.delete()
