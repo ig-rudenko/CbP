@@ -1,31 +1,107 @@
 from django.shortcuts import render
 from django import forms
+from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
-from .forms import Form, AuthGroupsForm, BackupGroupsForm, DevicesForm
+from .forms import HomeForm, AuthGroupsForm, BackupGroupsForm, DevicesForm
 from .models import AuthGroup, BackupGroup, Equipment
+from configparser import ConfigParser
+import sys
+import os
+from re import findall
+from datetime import date
 
 
-def index(request):
-    if request.method == 'POST':
-        file_to_read = request.POST.get('file')
-        userform = Form()
-        try:
-            with open(file_to_read) as f:
-                file = f.read()
-        except UnicodeDecodeError:
-            file = f"'utf-8' codec can't decode file: {file_to_read}"
-        return render(request, 'index.html', {"form": userform, "file": file})
-    else:
-        userform = Form()
-        return render(request, 'index.html', {"form": userform, "file": ''})
+def login(request):
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+
+def test(request):
+    text = f"""
+        Some attributes of the HttpRequest object:
+        scheme: {request.scheme}
+        path:   {request.path}
+        method: {request.method}
+        GET:    {request.GET}
+        user:   {request.user}
+    """
+    return HttpResponse(text, content_type="text/plain")
+
+
+def home(request):
+    login(request)
+    dirs_list = {}
+    cfg = ConfigParser()
+    cfg.read(f'{sys.path[0]}/config')
+    backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
+    for backup_group in os.listdir(backup_dir):   # Проходимся по элементам в директории для бэкапа
+        backup_group_path = os.path.join(backup_dir, backup_group)
+        if os.path.isdir(backup_group_path):     # Если найдена папка
+            if os.listdir(str(backup_group_path)):    # Если папка с профилем не пустая
+                dirs_list[backup_group] = {}
+                for dev in os.listdir(backup_group_path):
+                    # группа.имя_устройства = кол-во сохраненных файлов конфигураций
+                    dirs_list[backup_group][dev] = [len(os.listdir(os.path.join(backup_group_path, dev)))]
+                    last_date = ''
+                    for conf_file in os.listdir(os.path.join(backup_group_path, dev)):  # Перебираем файлы конфигураций
+                        if os.path.isfile(os.path.join(backup_group_path, dev, conf_file)):  # Если это файл
+                            # Ищем самую новую конфигурацию
+                            date_file = findall(r'(\d{4})-(\d{2})-(\d{2})', conf_file)
+                            date_file = date(int(date_file[0][0]), int(date_file[0][1]), int(date_file[0][2]))
+                            if not date_file:
+                                continue
+                            if not last_date or date_file > last_date:
+                                last_date = date_file
+                    dirs_list[backup_group][dev] += [last_date]
+    return render(request, 'home.html', {"form": dirs_list})
+
+
+def download_file(request):
+    login(request)
+    cfg = ConfigParser()
+    cfg.read(f'{sys.path[0]}/config')
+    backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
+    file_path = os.path.join(backup_dir, request.GET.get('bg'), request.GET.get('dn'), request.GET.get('fn'))
+    if os.path.exists(file_path):
+        with open(file_path, 'rb') as fh:
+            response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
+            response['Content-Disposition'] = 'inline; filename=' + os.path.basename(file_path)
+            return response
+
+
+def list_config_files(request):
+    login(request)
+    backup_group = request.GET.get('bg')
+    device_name = request.GET.get('dn')
+    cfg = ConfigParser()
+    cfg.read(f'{sys.path[0]}/config')
+    config_files = []
+    backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
+    for file in os.listdir(os.path.join(backup_dir, backup_group, device_name)):
+        if not os.path.isfile(os.path.join(backup_dir, backup_group, device_name, file)):
+            continue
+        date_file = findall(r'(\d{4})-(\d{2})-(\d{2})', file)
+        date_file = date(int(date_file[0][0]), int(date_file[0][1]), int(date_file[0][2]))
+        config_files.append([file, date_file])
+    return render(request, 'devices_config_list.html',
+                      {
+                          "form": config_files,
+                          "backup_group": backup_group,
+                          "device_name": device_name
+                      }
+                  )
 
 
 def auth_groups(request):
+    login(request)
+    if not User.objects.get(username=str(request.user)).is_superuser:
+        return HttpResponsePermanentRedirect('/devices')
     groups = AuthGroup.objects.all()
-    return render(request, "auth_groups.html", {"form": AuthGroupsForm, "groups": groups})
+    return render(request, "device_control/auth_groups.html", {"form": AuthGroupsForm, "groups": groups})
 
 
 def auth_group_edit(request, id: int = 0):
+    login(request)
     try:
         auth_group_form = AuthGroupsForm()
         if id:
@@ -47,12 +123,13 @@ def auth_group_edit(request, id: int = 0):
             group.save()
             return HttpResponsePermanentRedirect("/auth_groups")
         else:
-            return render(request, "auth_group_new.html", {"form": auth_group_form})
+            return render(request, "device_control/auth_group_new.html", {"form": auth_group_form})
     except AuthGroup.DoesNotExist:
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
 def auth_group_delete(request, id):
+    login(request)
     try:
         group = AuthGroup.objects.get(id=id)
         group.delete()
@@ -62,11 +139,13 @@ def auth_group_delete(request, id):
 
 
 def backup_groups(request):
+    login(request)
     groups = BackupGroup.objects.all()
-    return render(request, "backup_groups.html", {"form": BackupGroupsForm, "groups": groups})
+    return render(request, "device_control/backup_groups.html", {"form": BackupGroupsForm, "groups": groups})
 
 
 def backup_group_edit(request, id: int = 0):
+    login(request)
     try:
         backup_group_form = BackupGroupsForm()
         if id:
@@ -82,12 +161,13 @@ def backup_group_edit(request, id: int = 0):
             group.save()
             return HttpResponsePermanentRedirect("/backup_groups")
         else:
-            return render(request, "backup_group_edit.html", {"form": backup_group_form})
+            return render(request, "device_control/backup_group_edit.html", {"form": backup_group_form})
     except AuthGroup.DoesNotExist:
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
 def backup_group_delete(request, id):
+    login(request)
     try:
         group = BackupGroup.objects.get(id=id)
         group.delete()
@@ -97,16 +177,18 @@ def backup_group_delete(request, id):
 
 
 def devices(request):
+    login(request)
     devices_all = Equipment.objects.all()
     for d in devices_all:
         if d.auth_group_id:
             d.auth_group_id = AuthGroup.objects.get(id=d.auth_group_id).auth_group
         if d.backup_group_id:
             d.backup_group_id = BackupGroup.objects.get(id=d.backup_group_id).backup_group
-    return render(request, "devices.html", {"devices": devices_all})
+    return render(request, "device_control/devices.html", {"devices": devices_all})
 
 
 def device_edit(request, id: int = 0):
+    login(request)
     try:
 
         if id:
@@ -132,12 +214,13 @@ def device_edit(request, id: int = 0):
             return HttpResponsePermanentRedirect("/devices")
         else:
 
-            return render(request, "device_edit.html", {"form": device_form})
+            return render(request, "device_control/device_edit.html", {"form": device_form})
     except AuthGroup.DoesNotExist or BackupGroup.DoesNotExist:
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
 def device_delete(request, id):
+    login(request)
     try:
         group = Equipment.objects.get(id=id)
         group.delete()

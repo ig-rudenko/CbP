@@ -1,10 +1,9 @@
 from django import forms
 from .models import AuthGroup, BackupGroup
-from datetime import datetime
 
 
-class Form(forms.Form):
-    file = forms.FilePathField(path=f'/home/irudenko/PycharmProjects/CbP/')
+class HomeForm(forms.Form):
+    pass
 
 
 class AuthGroupsForm(forms.Form):

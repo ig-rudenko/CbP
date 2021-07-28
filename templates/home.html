@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+    {% for backup_group, devices in form.items %}
+        <h1>{{ backup_group }}</h1>
+            <table>
+                <tr><th>Имя</th><th>Конфигураций имеется</th><th>Последняя</th></tr>
+            {% for device_name, c in devices.items %}
+                <tr>
+                    <td><a class="no_decoration" href="/config?bg={{ backup_group }}&dn={{ device_name }}">{{ device_name }}</a></td>
+                    <td>{{ c.0 }}</td>
+                    <td>{{ c.1 }}</td>
+                </tr>
+            {% endfor %}
+           </table>
+    {% endfor %}
+    </form>
+{% endblock content %}

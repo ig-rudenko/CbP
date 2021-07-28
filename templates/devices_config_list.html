@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+    <h1>{{ device_name }}</h1>
+    {% if form %}
+    <table>
+        <tr><th>Имя</th><th>Дата</th></tr>
+        {% for line in form %}
+            <tr>
+                <td><a class="no_decoration" href="/download?bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.0 }}">{{ line.0 }}</a></td>
+                <td>{{ line.1 }}</td></tr>
+        {% endfor %}
+   </table>
+        {% else %}
+        Файлов конфигураций для данного оборудования не найдено
+    {% endif %}
+    </form>
+{% endblock content %}
