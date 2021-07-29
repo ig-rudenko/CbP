@@ -1,4 +1,15 @@
 {% extends "device_control/../device_control/base.html" %}
+
+{% block menu %}
+        <ul class="menu-main">
+    <li><a href="/" >Home</a></li>
+    <li><a class="current" href="/devices" >Devices</a></li>
+    <li><a href="/auth_groups">Auth Groups</a></li>
+    <li><a href="/backup_groups">Backup Groups</a></li>
+    <li><a href="/accounts/logout">Logout</a></li>
+</ul>
+{% endblock %}
+
 {% block header %}All Devices{% endblock header %}
 {% block content %}
     <form method="post">
