@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+    <h1>{{ device_name }}</h1>
+    {% if form %}
+        <pre>
+{{ form }}
+        </pre>
+    {% else %}
+        <pre>
+            Файл пустой
+        </pre>
+    {% endif %}
+    </form>
+{% endblock content %}

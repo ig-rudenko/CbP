@@ -144,6 +144,32 @@ def list_config_files(request):
                   )
 
 
+def show_config_file(request):
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
+    available_backup_groups = [g.backup_group for g in
+                               BackupGroup.objects.filter(users__username=current_user.username)]
+
+    if (not available_backup_groups or str(request.GET.get('bg')) not in available_backup_groups) \
+            and not current_user.is_superuser:
+        return HttpResponsePermanentRedirect('/')
+
+    backup_group = request.GET.get('bg')
+    device_name = request.GET.get('dn')
+    config_file_name = request.GET.get('fn')
+    cfg = ConfigParser()
+    cfg.read(f'{sys.path[0]}/config')
+    backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
+    if not os.path.exists(os.path.join(backup_dir, backup_group, device_name, config_file_name)) or \
+        not os.path.isfile(os.path.join(backup_dir, backup_group, device_name, config_file_name)):
+        file_output = ''
+    else:
+        with open(os.path.join(backup_dir, backup_group, device_name, config_file_name)) as file:
+            file_output = file.read()
+    return render(request, 'devices_config_show.html', {"form": file_output})
+
 def auth_groups(request):
     if str(request.user) == 'AnonymousUser':
         return HttpResponsePermanentRedirect('accounts/login/')

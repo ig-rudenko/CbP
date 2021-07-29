@@ -16,11 +16,41 @@
         </tr>
         {% for u in users %}
         <tr>
-            <td><a class="no_decoration" href="/users/{{ u.username }}">{{ u.username }}</a></td>
-            <td>{{ u.first_name }}</td>
-            <td>{{ u.last_name }}</td>
-            <td>{{ u.email }}</td>
-            <td>{{ u.last_login }}</td>
+            <td>
+                <a class="no_decoration"
+                   {% if not u.is_superuser %}
+                       href="/users/{{ u.username }}"
+                   {% endif %}
+                >{{ u.username }}</a>
+            </td>
+            <td>
+                <a class="no_decoration"
+                   {% if not u.is_superuser %}
+                       href="/users/{{ u.username }}"
+                   {% endif %}
+                >{{ u.first_name }}</a>
+            </td>
+            <td>
+                <a class="no_decoration"
+                   {% if not u.is_superuser %}
+                       href="/users/{{ u.username }}"
+                   {% endif %}
+                >{{ u.last_name }}</a>
+            </td>
+            <td>
+                <a class="no_decoration"
+                   {% if not u.is_superuser %}
+                       href="/users/{{ u.username }}"
+                   {% endif %}
+                >{{ u.email }}</a>
+            </td>
+            <td>
+                <a class="no_decoration"
+                   {% if not u.is_superuser %}
+                       href="/users/{{ u.username }}"
+                   {% endif %}
+                >{{ u.last_login }}</a>
+            </td>
 
             {% if u.is_active %}
                 <td style="color: green; ">Active</td>

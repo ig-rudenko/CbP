@@ -44,6 +44,7 @@ urlpatterns = [
     # DEVICE CONFIG FILES
     path('config', views.list_config_files),
     path('download', views.download_file),
+    path('show', views.show_config_file),
 
     # USER CONTROL
     path('users', views.users),
