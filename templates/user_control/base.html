@@ -5,17 +5,13 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="{% static "css/styles.css" %}" />
     <link rel="stylesheet" href="{% static "css/menu.css" %}" />
-    <link rel="stylesheet" href="{% static "css/for_home_page.css" %}" />
     <title>{% block title %}Configuration backup Project{% endblock title %}</title>
 </head>
 <body>
     <ul class="menu-main">
-        <li><a class="current" href="/" >Home</a></li>
-        {% if superuser %}
-            <li><a href="/devices" >Devices Control</a></li>
-            <li><a href="/users" >User Control</a></li>
-        {% endif %}
-        <li><a href="/accounts/logout">Logout</a></li>
+        <li><a href="/" >Home</a></li>
+        <li><a class="current" href="/users" >Users</a></li>
+
     </ul>
     <h1 class="center_">{% block header %}{% endblock header %}</h1>
     <div class="center_">{% block content %}{% endblock content %}</div>

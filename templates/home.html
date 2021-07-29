@@ -2,29 +2,33 @@
 {% block content %}
     <form method="get">
         {% csrf_token %}
-    {% for backup_group, devices in form.items %}
-        <p class="first"
-           id="first{{ backup_group }}"
-           onclick="first('{{ backup_group }}')">{{ backup_group }}</p>
+    {% if form %}
+        {% for backup_group, devices in form.items %}
+            <p class="first"
+               id="first{{ backup_group }}"
+               onclick="first('{{ backup_group }}')">{{ backup_group }}</p>
 
-        <p class="first_blue"
-           id="first_yelloy{{ backup_group }}"
-           style="display:none"
-           onclick="first_yelloy('{{ backup_group }}')">{{ backup_group }}</p>
+            <p class="first_blue"
+               id="first_yelloy{{ backup_group }}"
+               style="display:none"
+               onclick="first_yelloy('{{ backup_group }}')">{{ backup_group }}</p>
 
-        <div id="{{ backup_group }}" style="display:none">
-            <table>
-                <tr><th>Имя</th><th>Конфигураций имеется</th><th>Последняя</th></tr>
-            {% for device_name, c in devices.items %}
-                <tr>
-                    <td><a class="no_decoration" href="/config?bg={{ backup_group }}&dn={{ device_name }}">{{ device_name }}</a></td>
-                    <td>{{ c.0 }}</td>
-                    <td>{{ c.1 }}</td>
-                </tr>
-            {% endfor %}
-           </table>
-        </div>
-    {% endfor %}
+            <div id="{{ backup_group }}" style="display:none">
+                <table>
+                    <tr><th>Имя</th><th>Конфигураций имеется</th><th>Последняя</th></tr>
+                {% for device_name, c in devices.items %}
+                    <tr>
+                        <td><a class="no_decoration" href="/config?bg={{ backup_group }}&dn={{ device_name }}">{{ device_name }}</a></td>
+                        <td>{{ c.0 }}</td>
+                        <td>{{ c.1 }}</td>
+                    </tr>
+                {% endfor %}
+               </table>
+            </div>
+        {% endfor %}
+    {% else %}
+        Нет доступных групп!
+    {% endif %}
     </form>
     <script>
 

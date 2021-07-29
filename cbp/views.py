@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django import forms
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
 from .forms import HomeForm, AuthGroupsForm, BackupGroupsForm, DevicesForm
@@ -37,11 +36,30 @@ def home(request):
     if str(request.user) == 'AnonymousUser':
         return HttpResponsePermanentRedirect('accounts/login/')
 
+    current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
+    available_backup_groups = [g.backup_group for g in BackupGroup.objects.filter(users__username=current_user.username)]
+    # Все доступные группы у пользователя
+    if not available_backup_groups and not current_user.is_superuser:
+        # Если у данного пользователя нет доступных групп и он не суперпользователь, то ничего не выводим
+        return render(
+            request,
+                'home.html',
+                {
+                    "form": {},
+                    'superuser': check_superuser(request)
+                }
+        )
     dirs_list = {}
     cfg = ConfigParser()
+
     cfg.read(f'{sys.path[0]}/config')
     backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
     for backup_group in os.listdir(backup_dir):   # Проходимся по элементам в директории для бэкапа
+
+        if backup_group not in available_backup_groups and not current_user.is_superuser:
+            print(backup_group)
+            continue  # Пропускаем те группы, которые недопустимы
+
         backup_group_path = os.path.join(backup_dir, backup_group)
         if os.path.isdir(backup_group_path):     # Если найдена папка
             if os.listdir(str(backup_group_path)):    # Если папка с профилем не пустая
@@ -60,10 +78,6 @@ def home(request):
                             if not last_date or date_file > last_date:
                                 last_date = date_file
                     dirs_list[backup_group][dev] += [last_date]
-    # try:
-    #     superuser = User.objects.get(username=str(request.user)).is_superuser
-    # except Exception:
-    #     superuser = 0
     return render(
         request,
         'home.html',
@@ -77,6 +91,14 @@ def home(request):
 def download_file(request):
     if str(request.user) == 'AnonymousUser':
         return HttpResponsePermanentRedirect('accounts/login/')
+
+    current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
+    available_backup_groups = [g.backup_group for g in
+                               BackupGroup.objects.filter(users__username=current_user.username)]
+
+    if (not available_backup_groups or str(request.GET.get('bg')) not in available_backup_groups) \
+            and not current_user.is_superuser:
+        return HttpResponsePermanentRedirect('/')
 
     cfg = ConfigParser()
     cfg.read(f'{sys.path[0]}/config')
@@ -92,6 +114,14 @@ def download_file(request):
 def list_config_files(request):
     if str(request.user) == 'AnonymousUser':
         return HttpResponsePermanentRedirect('accounts/login/')
+
+    current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
+    available_backup_groups = [g.backup_group for g in
+                               BackupGroup.objects.filter(users__username=current_user.username)]
+
+    if (not available_backup_groups or str(request.GET.get('bg')) not in available_backup_groups) \
+            and not current_user.is_superuser:
+        return HttpResponsePermanentRedirect('/')
 
     backup_group = request.GET.get('bg')
     device_name = request.GET.get('dn')
@@ -294,3 +324,58 @@ def device_delete(request, id):
         return HttpResponsePermanentRedirect('/devices')
     except AuthGroup.DoesNotExist:
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
+
+
+def users(request):
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
+    u = User.objects.all()
+    return render(request, "user_control/users.html", {"users": u})
+
+
+def user_access_edit(request, username):
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
+    if request.method == 'GET':
+        if not username:
+            return HttpResponsePermanentRedirect('/users')
+
+        gr = BackupGroup.objects.all()
+        backup_groups = {}
+        for g in gr:
+            # Проверяем, доступна ли данная группа у пользователя
+            try:
+                is_enable = BackupGroup.objects.get(backup_group=g.backup_group).users.get(username=username)
+            except Exception:
+                is_enable = 0
+            backup_groups[g.backup_group] = is_enable
+        return render(
+            request,
+            'user_control/user_access_group.html',
+            {
+                'username': username,
+                'backup_groups': backup_groups
+            }
+        )
+
+    elif request.method == 'POST':
+        gr = BackupGroup.objects.all()  # Все backup_groups
+        user = User.objects.get(username=username)  # Пользователь
+        for g in gr:
+            backup_gr = BackupGroup.objects.get(backup_group=g.backup_group)
+
+            if request.POST.get(g.backup_group):    # Если данная группа была выбрана
+
+                user.backupgroup_set.add(backup_gr)  # Добавляем пользователя в группу
+            else:
+                user.backupgroup_set.remove(backup_gr)  # Удаляем
+
+        return HttpResponsePermanentRedirect('/users')
