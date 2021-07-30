@@ -18,7 +18,11 @@
         <li><a href="/accounts/logout">Logout</a></li>
     </ul>
     <h1 class="center_">{% block header %}{% endblock header %}</h1>
-    <div class="center_">{% block content %}{% endblock content %}</div>
-    <div>{% block footer %}{% endblock footer %}</div>
+    <div class="center_" style="background-color: white; min-height: 100%">
+        {% block content %}{% endblock content %}
+    </div>
+    <div>
+        {% block footer %}{% endblock footer %}
+    </div>
 </body>
 </html>

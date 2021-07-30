@@ -1,12 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+{% load static %}
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <title>LOGIN</title>
+    <link rel="stylesheet" href="{% static "css/styles.css" %}" />
 </head>
 &nbsp;
 <body>
-    <div class="center_">
+    <div class="center_" style="background-color: white; min-height: 100%; padding-top: 20px">
     {% block content %}
 
     {% if form.errors %}
@@ -24,7 +26,7 @@
 
     <form method="post" action="{% url 'login' %}">
     {% csrf_token %}
-    <table>
+    <table class="center_">
 
     <tr>
       <td>{{ form.username.label_tag }}</td>
@@ -37,12 +39,15 @@
     </tr>
     </table>
 
-    <input type="submit" value="login" />
-    <input type="hidden" name="next" value="{{ next }}" />
+    <div class="center_">
+        <input class="atuin-btn" type="submit" value="Войти" />
+        <input class="atuin-btn center_" type="hidden" name="next" value="{{ next }}" />
+    </div>
+
     </form>
 
     {# Assumes you setup the password_reset view in your URLconf #}
-    <p><a href="{% url 'password_reset' %}">Lost password?</a></p>
+    <p><a class="no_decoration center_" href="{% url 'password_reset' %}">Забыли пароль?</a></p>
 
     {% endblock %}
     </div>

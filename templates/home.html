@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-    <form method="get">
+    <form method="get" style="padding: 20px">
         {% csrf_token %}
     {% if form %}
         {% for backup_group, devices in form.items %}

@@ -14,9 +14,11 @@
 {% block content %}
     <form method="post">
         {% csrf_token %}
-        <table>
+        <table class="center_">
             {{ form.as_table }}
         </table>
-        <input class="atuin-btn" type="submit" value="Сохранить">
+        <div class="center_">
+            <input class="atuin-btn" type="submit" value="Сохранить">
+        </div>
     </form>
 {% endblock content %}

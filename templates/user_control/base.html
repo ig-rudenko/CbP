@@ -5,16 +5,19 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="{% static "css/styles.css" %}" />
     <link rel="stylesheet" href="{% static "css/menu.css" %}" />
+    <link rel="stylesheet" href="{% static "css/checkbox.css" %}" />
     <title>{% block title %}Configuration backup Project{% endblock title %}</title>
 </head>
 <body>
     <ul class="menu-main">
         <li><a href="/" >Home</a></li>
         <li><a class="current" href="/users" >Users</a></li>
-
+        <li><a href="/accounts/logout">Logout</a></li>
     </ul>
     <h1 class="center_">{% block header %}{% endblock header %}</h1>
-    <div class="center_">{% block content %}{% endblock content %}</div>
+    <div class="center_" style="background-color: white; min-height: 100%">
+        {% block content %}{% endblock content %}
+    </div>
     <div>{% block footer %}{% endblock footer %}</div>
 </body>
 </html>

@@ -1,19 +1,29 @@
 {% extends "device_control/../user_control/base.html" %}
 {% block header %}
-{{ username}}
+User: {{ username}}
 {% endblock header %}
 {% block content %}
+    <p style="padding: 20px" class="center_">
+    Укажите, какие группы будут доступны пользователю
+    </p>
     <form method="post">
-        {% csrf_token %}
+    {% csrf_token %}
+    <div class="center_">
     {% for g, status in backup_groups.items %}
-        <div>
-        <input type="checkbox" id="{{ g }}" name="{{ g }}"
-        {% if status %}
-            checked
-        {% endif %}><label style="font-family: 'Ubuntu Condensed', sans-serif; font-size: 20px;"
-                           for="{{ g }}">{{ g }}</label>
+        <div class="center_">
+            <label class="container" style="font-family: 'Ubuntu Condensed', sans-serif; font-size: 20px;"
+                               for="{{ g }}">{{ g }}
+            <input type="checkbox" id="{{ g }}" name="{{ g }}"
+                {% if status %}
+                    checked
+                {% endif %}>
+            <span class="checkmark"></span>
+            </label>
         </div>
     {% endfor %}
-    <input class="atuin-btn" type="submit" value="Сохранить">
+    </div>
+    <div class="center_">
+        <input class="atuin-btn" type="submit" value="Сохранить">
+    </div>
     </form>
 {% endblock content %}

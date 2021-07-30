@@ -1,6 +1,13 @@
+html{
+    height: 100%;
+}
+
 body{
     font-family: 'Ubuntu Condensed', sans-serif;
+    height: 100%;
+    background-color: #eff2ff;
 }
+
 h1{color: navy;}
 img{width: 350px;}
 
@@ -18,6 +25,25 @@ img{width: 350px;}
 .no_decoration{
     text-decoration: none;
 }
+
+
+select {
+    width: 140px;
+    height: 35px;
+    padding: 4px;
+    border-radius:4px;
+    box-shadow: 2px 2px 8px #999;
+    background: #eee;
+    border: none;
+    outline: none;
+    display: inline-block;
+    -webkit-appearance:none;
+    -moz-appearance: none;
+    appearance: none;
+    cursor: pointer;
+}
+
+
 
 table {
     font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif, serif;
