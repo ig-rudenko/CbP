@@ -1,13 +1,16 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
-from .forms import HomeForm, AuthGroupsForm, BackupGroupsForm, DevicesForm
+from .forms import AuthGroupsForm, BackupGroupsForm, DevicesForm
 from .models import AuthGroup, BackupGroup, Equipment
 from configparser import ConfigParser
 import sys
 import os
-from re import findall
-from datetime import date
+from datetime import datetime
+
+
+def get_create_time(file):
+    return os.stat(file).st_atime
 
 
 def check_superuser(request):
@@ -66,18 +69,20 @@ def home(request):
                 dirs_list[backup_group] = {}
                 for dev in os.listdir(backup_group_path):
                     # группа.имя_устройства = кол-во сохраненных файлов конфигураций
+                    if not os.path.isdir(os.path.join(backup_group_path, dev)):
+                        continue
                     dirs_list[backup_group][dev] = [len(os.listdir(os.path.join(backup_group_path, dev)))]
-                    last_date = ''
-                    for conf_file in os.listdir(os.path.join(backup_group_path, dev)):  # Перебираем файлы конфигураций
-                        if os.path.isfile(os.path.join(backup_group_path, dev, conf_file)):  # Если это файл
-                            # Ищем самую новую конфигурацию
-                            date_file = findall(r'(\d{4})-(\d{2})-(\d{2})', conf_file)
-                            date_file = date(int(date_file[0][0]), int(date_file[0][1]), int(date_file[0][2]))
-                            if not date_file:
-                                continue
-                            if not last_date or date_file > last_date:
-                                last_date = date_file
-                    dirs_list[backup_group][dev] += [last_date]
+                    # /backup_dir/backup_group/device_name/
+                    config_files = os.listdir(os.path.join(backup_group_path, dev))
+                    # Оставляем только файлы
+                    config_files = [os.path.join(backup_group_path, dev, f)
+                                    for f in config_files if os.path.isfile(os.path.join(backup_group_path, dev, f))]
+                    if not config_files:
+                        continue
+                    # Ищем самый новый
+                    last_date = os.stat(max(config_files, key=get_create_time)).st_mtime
+
+                    dirs_list[backup_group][dev] += [datetime.fromtimestamp(last_date).strftime('%-d %b %Y %X')]
     return render(
         request,
         'home.html',
@@ -112,6 +117,9 @@ def download_file(request):
 
 
 def list_config_files(request):
+
+
+
     if str(request.user) == 'AnonymousUser':
         return HttpResponsePermanentRedirect('accounts/login/')
 
@@ -129,12 +137,18 @@ def list_config_files(request):
     cfg.read(f'{sys.path[0]}/config')
     config_files = []
     backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
-    for file in os.listdir(os.path.join(backup_dir, backup_group, device_name)):
-        if not os.path.isfile(os.path.join(backup_dir, backup_group, device_name, file)):
-            continue
-        date_file = findall(r'(\d{4})-(\d{2})-(\d{2})', file)
-        date_file = date(int(date_file[0][0]), int(date_file[0][1]), int(date_file[0][2]))
-        config_files.append([file, date_file])
+    config_files_dir = os.path.join(backup_dir, backup_group, device_name)
+    config_files_list = os.listdir(config_files_dir)
+    # Полный путь до файлов конфигураций
+    config_files_list = [os.path.join(config_files_dir, f)
+                         for f in config_files_list
+                         if os.path.isfile(os.path.join(config_files_dir, f))]
+
+    config_files_list = sorted(config_files_list, key=get_create_time)
+    config_files_list.reverse()
+    for file in config_files_list:
+        date_file = os.stat(file).st_mtime
+        config_files.append([os.path.split(file)[1], datetime.fromtimestamp(date_file).strftime('%-d %b %Y %X')])
     return render(request, 'devices_config_list.html',
                       {
                           "form": config_files,
@@ -168,7 +182,9 @@ def show_config_file(request):
     else:
         with open(os.path.join(backup_dir, backup_group, device_name, config_file_name)) as file:
             file_output = file.read()
-    return render(request, 'devices_config_show.html', {"form": file_output})
+    return render(request, 'devices_config_show.html',
+                  {"form": file_output, "device_name": device_name, "backup_group": backup_group})
+
 
 def auth_groups(request):
     if str(request.user) == 'AnonymousUser':
