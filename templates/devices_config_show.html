@@ -1,16 +1,46 @@
 {% extends "base.html" %}
 {% block content %}
+    <div style="padding: 20px;">
     <form method="post">
         {% csrf_token %}
     <h1>{{ backup_group }}: {{ device_name }}</h1>
     {% if form %}
-        <pre>
-{{ form }}
-        </pre>
+        <style>
+        textarea {
+            display: block;
+            width: 100%;
+            box-sizing: border-box;
+            resize: none;
+            min-height: 3em;
+            white-space: pre;
+        }
+        </style>
+        <textarea readonly>
+            {{ form }}
+        </textarea>
     {% else %}
         <pre>
             Файл пустой
         </pre>
     {% endif %}
     </form>
+    </div>
+    <script>
+    document.querySelector('textarea').addEventListener('input', function (e)
+    {
+        e.target.style.height = 'auto';
+        e.target.style.height = e.target.scrollHeight + 2 + "px";
+    }
+    )
+    function fixTextareaSize(textarea) {
+        textarea.style.height = 'auto'
+        textarea.style.height = textarea.scrollHeight + 2 + "px"
+    }
+
+    ~function () {
+        var textarea = document.querySelector('textarea')
+        textarea.addEventListener('input', function (e) { fixTextareaSize(e.target) })
+        fixTextareaSize(textarea)}()
+
+    </script>
 {% endblock content %}

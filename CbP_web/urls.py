@@ -48,5 +48,8 @@ urlpatterns = [
 
     # USER CONTROL
     path('users', views.users),
-    path('users/<str:username>', views.user_access_edit)
+    path('users/<str:username>', views.user_access_edit),
+
+    # DELETE FILE
+    path('delete_file', views.delete_file)
 ]

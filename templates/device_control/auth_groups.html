@@ -17,7 +17,6 @@
 {% block content %}
     <form method="get">
         {% csrf_token %}
-{#    <h2>Созданные группы</h2>#}
     {% if groups.count > 0 %}
     <table class="brd center_">
         <tr>
@@ -33,10 +32,19 @@
             <td>{{ g.password }}</td>
             <td>{{ g.privilege_mode_password }}</td>
             <td><a class="no_decoration font20" href="auth_group/edit/{{ g.id }}">✎</a> |
-                <a class="no_decoration" href="auth_group/delete/{{ g.id }}">❌</a></td>
+                <a class="no_decoration" style="cursor: pointer" onclick="delete_group('{{ g.id }}', '{{ g.auth_group }}')">❌</a></td>
         </tr>
         {% endfor %}
     </table>
     {% endif %}
     </form>
+
+    <script>
+    function delete_group(group_id, group_name) {
+        if (confirm("Вы согласны удалить группу \"" + group_name + "\" ?")) {
+            window.location.href = "auth_group/delete/" + group_id
+        }
+    }
+    </script>
+
 {% endblock content %}

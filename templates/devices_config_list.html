@@ -1,9 +1,39 @@
 {% extends "base.html" %}
 {% block content %}
-    <form method="post">
-        {% csrf_token %}
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
+
+<div style="padding: 20px">
+
     <h1>{{ backup_group }}: {{ device_name }}</h1>
+
+    <form method="post" enctype="multipart/form-data">
+
+        {% csrf_token %}
+
+    <div class="upload_form">
+
+        <label>
+
+            <div>Загрузить</div>
+            <input type="submit" class="main_input_file">
+
+        </label>
+        <label>
+
+            <input name="file" type="file" class="main_input_file" />
+            <div>Обзор...</div>
+            <input class="f_name" type="text" id="f_name" value="Файл не выбран." disabled />
+            <input type="text" name="backup_group" style="display: none" value="{{ backup_group }}">
+            <input type="text" name="device_name" style="display: none" value="{{ device_name }}">
+
+        </label>
+
+    </div>
+    </form>
+
+
     {% if form %}
+
     <table>
         <tr><th>Имя</th><th>Дата</th></tr>
         {% for line in form %}
@@ -21,11 +51,55 @@
                             ⇩
                     </a>
                 </td>
+
+                {% if superuser %}
+                   {# Кнопка удаления файла #}
+                    <td>
+                        <a style="cursor: pointer" onclick="delete_file('{{ line.0 }}')">❌</a>
+                    </td>
+                {% endif %}
+
             </tr>
+
         {% endfor %}
+
    </table>
+
         {% else %}
-        Файлов конфигураций для данного оборудования не найдено
+
+        Файлы не найдены
+
     {% endif %}
-    </form>
+
+
+
+</div>
+
+<script>
+
+    $(document).ready(function() {
+
+        $(".main_input_file").change(function() {
+
+            var f_name = [];
+
+            for (var i = 0; i < $(this).get(0).files.length; ++i) {
+
+                f_name.push(" " + $(this).get(0).files[i].name);
+
+            }
+
+            $("#f_name").val(f_name.join(", "));
+        });
+
+    });
+
+    function delete_file(file_name) {
+        if (confirm("Вы согласны удалить файл \"" + file_name + "\" ?")) {
+            window.location.href = 'delete_file?bg={{ backup_group }}&dn={{ device_name }}&fn=' + file_name
+        }
+    }
+
+</script>
+
 {% endblock content %}

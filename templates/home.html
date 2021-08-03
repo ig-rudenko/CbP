@@ -1,19 +1,30 @@
 {% extends "base.html" %}
 {% block content %}
-    <form method="get" style="padding: 20px">
-        {% csrf_token %}
+    <div style="padding: 20px">
+
     {% if form %}
         {% for backup_group, devices in form.items %}
             <p class="first"
                id="first{{ backup_group }}"
-               onclick="first('{{ backup_group }}')">{{ backup_group }}</p>
+               onclick="first('{{ backup_group }}')">{{ backup_group }}
+            </p>
 
             <p class="first_blue"
                id="first_yelloy{{ backup_group }}"
                style="display:none"
-               onclick="first_yelloy('{{ backup_group }}')">{{ backup_group }}</p>
+               onclick="first_yelloy('{{ backup_group }}')">{{ backup_group }}
+            </p>
 
             <div id="{{ backup_group }}" style="display:none">
+                <form method="post">
+                    {% csrf_token %}
+
+                    <input type="button" value="New" id="{{ backup_group }}-show-button" class="submit"
+                           onclick="show_add_folder_block('{{ backup_group }}')">
+                    <label for="{{ backup_group }}-text-input"></label><input type="text" name="{{ backup_group }}" required id="{{ backup_group }}-text-input" style="display: none">
+                    <input type="submit" id="{{ backup_group }}-submit" class="submit" value="Добавить папку" style="display: none">
+
+                </form>
                 <table>
                     <tr><th>Имя</th><th>Конфигураций имеется</th><th>Последняя</th></tr>
                 {% for device_name, c in devices.items %}
@@ -29,7 +40,7 @@
     {% else %}
         Нет доступных групп!
     {% endif %}
-    </form>
+    </div>
     <script>
 
 function first(s) {
@@ -42,6 +53,12 @@ function first_yelloy(s) {
     document.getElementById(s).setAttribute("style", "display: none");
     document.getElementById("first_yelloy" + s).setAttribute("style", "display: none");
     document.getElementById("first" + s).setAttribute("style", "display: block");
+}
+
+function show_add_folder_block(backup_group) {
+document.getElementById(backup_group + '-text-input').setAttribute("style", "display: block");
+document.getElementById(backup_group + '-submit').setAttribute("style", "display: block");
+document.getElementById(backup_group + '-show-button').setAttribute("style", "display: none");
 }
 
 </script>

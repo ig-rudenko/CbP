@@ -17,3 +17,9 @@
     line-height: 33px;
     border: 1PX SOLID #669;
 }
+
+.show-button {
+    font-family: 'Ubuntu Condensed', sans-serif;
+    width: 20px;
+    height: 20px;
+}

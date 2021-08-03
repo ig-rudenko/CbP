@@ -8,8 +8,9 @@ body{
     background-color: #eff2ff;
 }
 
-h1{color: navy;}
-img{width: 350px;}
+h1{
+    color: navy;
+}
 
 .center_
 {
@@ -44,13 +45,10 @@ select {
 }
 
 
-
 table {
     font-family: "Lucida Sans Unicode", "Lucida Grande", Sans-Serif, serif;
     font-size: 14px;
     background: white;
-    /*max-width: 70%;*/
-    /*width: 70%;*/
     border-collapse: collapse;
     text-align: center;
 }
@@ -61,12 +59,12 @@ th {
     padding: 10px 8px;
 }
 td {
-    color: #669; /*#669*/
+    color: #669;
     padding: 9px 8px;
     transition: .3s linear;
 }
 tr:hover td {
-    color: #040710;/*6699ff*/
+    color: #040710;
 }
 
 

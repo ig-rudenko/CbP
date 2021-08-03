@@ -36,10 +36,19 @@
             <td>{{ d.auth_group_id }}</td>
             <td>{{ d.backup_group_id }}</td>
             <td><a class="no_decoration font20" href="device/edit/{{ d.id }}">✎</a> |
-                <a class="no_decoration" href="device/delete/{{ d.id }}">❌</a></td>
+                <a class="no_decoration" style="cursor: pointer" onclick="delete_group('{{ d.id }}', '{{ d.device_name }}')">❌</a></td>
         </tr>
         {% endfor %}
     </table>
     {% endif %}
     </form>
+
+        <script>
+    function delete_group(id, name) {
+        if (confirm("Вы согласны удалить устройство \"" + name + "\" ?")) {
+            window.location.href = "device/delete/" + id
+        }
+    }
+    </script>
+
 {% endblock content %}

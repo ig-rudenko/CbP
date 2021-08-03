@@ -2,10 +2,6 @@ from django import forms
 from .models import AuthGroup, BackupGroup
 
 
-class HomeForm(forms.Form):
-    pass
-
-
 class AuthGroupsForm(forms.Form):
     group = forms.CharField(max_length=50, label='Имя группы')
     login = forms.CharField(max_length=50, label='Имя пользователя')

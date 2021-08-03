@@ -1,0 +1,52 @@
+.main_input_file {
+	display: none;
+}
+
+.submit {
+	width: 100px;
+	height: 32px;
+	background: #669;
+	border-radius: 4px;
+	color: #fff;
+	text-align: center;
+	line-height: 32px;
+    font-family: 'Ubuntu Condensed', sans-serif;
+	font-size:14px;
+	display: inline-block;
+	vertical-align: top;
+}
+
+.submit:hover {
+	background: #2980b9;
+	cursor: pointer;
+}
+
+
+.upload_form div {
+	width: 100px;
+	height: 32px;
+	background: #3498db;
+	border-radius: 4px;
+	color: #fff;
+	text-align: center;
+	line-height: 32px;
+    font-family: 'Ubuntu Condensed', sans-serif;
+	font-size:14px;
+	display: inline-block;
+	vertical-align: top;
+}
+
+.upload_form div:hover {
+	background: #2980b9;
+	cursor: pointer;
+}
+
+#f_name {
+	background: transparent;
+	border: 0;
+	display: inline-block;
+	vertical-align: top;
+	height: 30px;
+	padding: 0 8px;
+	width: 100%;
+}

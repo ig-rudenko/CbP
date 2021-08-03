@@ -27,10 +27,19 @@
         <tr>
             <td>{{ g.backup_group }}</td>
             <td><a class="no_decoration font20" href="backup_group/edit/{{ g.id }}">✎</a> |
-                <a class="no_decoration" href="backup_group/delete/{{ g.id }}">❌</a></td>
+                <a class="no_decoration" style="cursor: pointer" onclick="delete_group('{{ g.id }}', '{{ g.backup_group }}')">❌</a></td>
         </tr>
         {% endfor %}
     </table>
     {% endif %}
     </form>
+
+    <script>
+    function delete_group(group_id, group_name) {
+        if (confirm("Вы согласны удалить группу \"" + group_name + "\" ?")) {
+            window.location.href = "backup_group/delete/" + group_id
+        }
+    }
+    </script>
+
 {% endblock content %}

@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
+from django.core.files.storage import FileSystemStorage
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
 from .forms import AuthGroupsForm, BackupGroupsForm, DevicesForm
 from .models import AuthGroup, BackupGroup, Equipment
@@ -11,6 +12,12 @@ from datetime import datetime
 
 def get_create_time(file):
     return os.stat(file).st_atime
+
+
+def get_backup_dir():
+    cfg = ConfigParser()
+    cfg.read(f'{sys.path[0]}/config')
+    return cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
 
 
 def check_superuser(request):
@@ -39,33 +46,34 @@ def home(request):
     if str(request.user) == 'AnonymousUser':
         return HttpResponsePermanentRedirect('accounts/login/')
 
-    current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
-    available_backup_groups = [g.backup_group for g in BackupGroup.objects.filter(users__username=current_user.username)]
-    # Все доступные группы у пользователя
-    if not available_backup_groups and not current_user.is_superuser:
-        # Если у данного пользователя нет доступных групп и он не суперпользователь, то ничего не выводим
-        return render(
-            request,
+    if request.method == 'GET':
+
+        current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
+        available_backup_groups = [g.backup_group for g in
+                                   BackupGroup.objects.filter(users__username=current_user.username)]
+        # Все доступные группы у пользователя
+        if not available_backup_groups and not current_user.is_superuser:
+            # Если у данного пользователя нет доступных групп и он не суперпользователь, то ничего не выводим
+            return render(
+                request,
                 'home.html',
                 {
                     "form": {},
                     'superuser': check_superuser(request)
                 }
-        )
-    dirs_list = {}
-    cfg = ConfigParser()
+            )
 
-    cfg.read(f'{sys.path[0]}/config')
-    backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
-    for backup_group in os.listdir(backup_dir):   # Проходимся по элементам в директории для бэкапа
+        dirs_list = {}
+        backup_dir = get_backup_dir()
+        for backup_group in os.listdir(backup_dir):   # Проходимся по элементам в директории для бэкапа
 
-        if backup_group not in available_backup_groups and not current_user.is_superuser:
-            print(backup_group)
-            continue  # Пропускаем те группы, которые недопустимы
+            if backup_group not in available_backup_groups and not current_user.is_superuser:
+                print(backup_group)
+                continue  # Пропускаем те группы, которые недопустимы
 
-        backup_group_path = os.path.join(backup_dir, backup_group)
-        if os.path.isdir(backup_group_path):     # Если найдена папка
-            if os.listdir(str(backup_group_path)):    # Если папка с профилем не пустая
+            backup_group_path = os.path.join(backup_dir, backup_group)
+            if os.path.isdir(backup_group_path):     # Если найдена папка
+                # if os.listdir(str(backup_group_path)):    # Если папка с профилем не пустая
                 dirs_list[backup_group] = {}
                 for dev in os.listdir(backup_group_path):
                     # группа.имя_устройства = кол-во сохраненных файлов конфигураций
@@ -83,14 +91,24 @@ def home(request):
                     last_date = os.stat(max(config_files, key=get_create_time)).st_mtime
 
                     dirs_list[backup_group][dev] += [datetime.fromtimestamp(last_date).strftime('%-d %b %Y %X')]
-    return render(
-        request,
-        'home.html',
-        {
-            "form": dirs_list,
-            'superuser': check_superuser(request)
-        }
-    )
+        return render(
+            request,
+            'home.html',
+            {
+                "form": dirs_list,
+                'superuser': check_superuser(request)
+            }
+        )
+    elif request.method == 'POST':
+
+        groups = [g.backup_group for g in BackupGroup.objects.all()]
+        for g in groups:
+            if request.POST.get(g):
+                try:
+                    os.mkdir(f"{get_backup_dir()}/{g}/{request.POST.get(g)}", mode=0o777)
+                except FileExistsError:
+                    pass
+        return HttpResponsePermanentRedirect('/')
 
 
 def download_file(request):
@@ -105,9 +123,7 @@ def download_file(request):
             and not current_user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
-    cfg = ConfigParser()
-    cfg.read(f'{sys.path[0]}/config')
-    backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
+    backup_dir = get_backup_dir()
     file_path = os.path.join(backup_dir, request.GET.get('bg'), request.GET.get('dn'), request.GET.get('fn'))
     if os.path.exists(file_path):
         with open(file_path, 'rb') as fh:
@@ -117,45 +133,60 @@ def download_file(request):
 
 
 def list_config_files(request):
-
-
-
     if str(request.user) == 'AnonymousUser':
         return HttpResponsePermanentRedirect('accounts/login/')
 
-    current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
-    available_backup_groups = [g.backup_group for g in
-                               BackupGroup.objects.filter(users__username=current_user.username)]
+    if request.method == 'GET':
+        current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
+        available_backup_groups = [g.backup_group for g in
+                                   BackupGroup.objects.filter(users__username=current_user.username)]
 
-    if (not available_backup_groups or str(request.GET.get('bg')) not in available_backup_groups) \
-            and not current_user.is_superuser:
-        return HttpResponsePermanentRedirect('/')
+        if (not available_backup_groups or str(request.GET.get('bg')) not in available_backup_groups) \
+                and not current_user.is_superuser:
+            return HttpResponsePermanentRedirect('/')
 
-    backup_group = request.GET.get('bg')
-    device_name = request.GET.get('dn')
-    cfg = ConfigParser()
-    cfg.read(f'{sys.path[0]}/config')
-    config_files = []
-    backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
-    config_files_dir = os.path.join(backup_dir, backup_group, device_name)
-    config_files_list = os.listdir(config_files_dir)
-    # Полный путь до файлов конфигураций
-    config_files_list = [os.path.join(config_files_dir, f)
-                         for f in config_files_list
-                         if os.path.isfile(os.path.join(config_files_dir, f))]
+        backup_group = request.GET.get('bg')
+        device_name = request.GET.get('dn')
+        config_files = []
+        backup_dir = get_backup_dir()
+        config_files_dir = os.path.join(backup_dir, backup_group, device_name)
+        config_files_list = os.listdir(config_files_dir)
+        # Полный путь до файлов конфигураций
+        config_files_list = [os.path.join(config_files_dir, f)
+                             for f in config_files_list
+                             if os.path.isfile(os.path.join(config_files_dir, f))]
 
-    config_files_list = sorted(config_files_list, key=get_create_time)
-    config_files_list.reverse()
-    for file in config_files_list:
-        date_file = os.stat(file).st_mtime
-        config_files.append([os.path.split(file)[1], datetime.fromtimestamp(date_file).strftime('%-d %b %Y %X')])
-    return render(request, 'devices_config_list.html',
-                      {
-                          "form": config_files,
-                          "backup_group": backup_group,
-                          "device_name": device_name
-                      }
-                  )
+        config_files_list = sorted(config_files_list, key=get_create_time)
+        config_files_list.reverse()
+        for file in config_files_list:
+            date_file = os.stat(file).st_mtime
+            config_files.append([os.path.split(file)[1], datetime.fromtimestamp(date_file).strftime('%-d %b %Y %X')])
+        return render(request, 'devices_config_list.html',
+                          {
+                              "form": config_files,
+                              "backup_group": backup_group,
+                              "device_name": device_name,
+                              "superuser": check_superuser(request)
+                          }
+                      )
+
+    # ЗАГРУЗКА ФАЙЛА
+    elif request.method == 'POST' and request.FILES.get('file'):
+        with open(
+                os.path.join(
+                    get_backup_dir(),
+                    request.POST.get("backup_group"),
+                    request.POST.get("device_name"),
+                    str(request.FILES["file"].name).replace(" ", "_")),
+                'wb+'
+        ) as new_file:
+            for chunk_ in request.FILES['file'].chunks():
+                new_file.write(chunk_)
+        return HttpResponsePermanentRedirect(f'/config?bg={request.POST.get("backup_group")}&dn={request.POST.get("device_name")}')
+
+
+    else:
+        return HttpResponsePermanentRedirect(f'/config?bg={request.POST.get("backup_group")}&dn={request.POST.get("device_name")}')
 
 
 def show_config_file(request):
@@ -173,17 +204,48 @@ def show_config_file(request):
     backup_group = request.GET.get('bg')
     device_name = request.GET.get('dn')
     config_file_name = request.GET.get('fn')
-    cfg = ConfigParser()
-    cfg.read(f'{sys.path[0]}/config')
-    backup_dir = cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
+    backup_dir = get_backup_dir()
     if not os.path.exists(os.path.join(backup_dir, backup_group, device_name, config_file_name)) or \
         not os.path.isfile(os.path.join(backup_dir, backup_group, device_name, config_file_name)):
         file_output = ''
     else:
-        with open(os.path.join(backup_dir, backup_group, device_name, config_file_name)) as file:
-            file_output = file.read()
+        try:
+            with open(os.path.join(backup_dir, backup_group, device_name, config_file_name)) as file:
+                file_output = file.read()
+        except UnicodeDecodeError:
+            file_output = 'Невозможно прочитать данный файл в виде текста'
     return render(request, 'devices_config_show.html',
-                  {"form": file_output, "device_name": device_name, "backup_group": backup_group})
+                      {
+                          "form": file_output,
+                          "device_name": device_name,
+                          "backup_group": backup_group,
+                          "superuser": check_superuser(request)
+                      }
+                  )
+
+
+def delete_file(request):
+    if str(request.user) == 'AnonymousUser':
+        return HttpResponsePermanentRedirect('accounts/login/')
+
+    if not check_superuser(request):
+        return HttpResponsePermanentRedirect('/')
+
+    if request.method == 'GET':
+        backup_group = request.GET.get('bg')
+        device_name = request.GET.get('dn')
+        file_name = request.GET.get('fn')
+
+        if os.path.exists(os.path.join(get_backup_dir(), backup_group, device_name, file_name)):
+
+            os.remove(os.path.join(get_backup_dir(), backup_group, device_name, file_name))
+            # except Exception:
+            #     pass
+
+        return HttpResponsePermanentRedirect(f'config?bg={backup_group}&dn={device_name}')
+
+    else:
+        return HttpResponsePermanentRedirect('/')
 
 
 def auth_groups(request):
@@ -276,6 +338,8 @@ def backup_group_edit(request, id: int = 0):
         if request.method == "POST":
             group.backup_group = request.POST.get('group')
             group.save()
+            if not os.path.exists(os.path.join(get_backup_dir(), request.POST.get('group'))):
+                os.mkdir(os.path.join(get_backup_dir(), request.POST.get('group')), mode=0o777)
             return HttpResponsePermanentRedirect("/backup_groups")
         else:
             return render(request, "device_control/backup_group_edit.html", {"form": backup_group_form})
@@ -292,6 +356,9 @@ def backup_group_delete(request, id):
 
     try:
         group = BackupGroup.objects.get(id=id)
+        if os.path.exists(os.path.join(get_backup_dir(), group.backup_group)) and \
+                not os.listdir(os.path.join(get_backup_dir(), group.backup_group)):  # Если папка пустая, то удаляем
+            os.rmdir(os.path.join(get_backup_dir(), group.backup_group))
         group.delete()
         return HttpResponsePermanentRedirect('/backup_groups')
     except AuthGroup.DoesNotExist:
