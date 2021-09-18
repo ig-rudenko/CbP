@@ -1,0 +1,36 @@
+{% extends "device_control/base.html" %}
+
+{% block menu %}
+    <ul class="menu-main">
+        <li><a href="/" >Home</a></li>
+        <li><a href="/devices" >Devices</a></li>
+        <li><a href="/auth_groups">Auth Groups</a></li>
+        <li><a href="/backup_groups">Backup Groups</a></li>
+        <li><a class="current" style="color: #ec2525" href="/zabbix/groups">From Zabbix</a></li>
+        <li><a href="/accounts/logout">Logout</a></li>
+    </ul>
+{% endblock %}
+
+{% block header %}
+    Zabbix Groups
+{% endblock header %}
+
+{% block content %}
+    {% if groups %}
+        <div class="center_">
+            <table class="brd">
+
+            {% for g in groups %}
+                <tr>
+                    <td>
+                        <a class="no_decoration" href="/zabbix/groups?g={{ g.groupid }}&gn={{ g.name }}">{{ g.name }}</a>
+                    </td>
+                </tr>
+            {% endfor %}
+
+            </table>
+        </div>
+    {% else %}
+        <p>Ошибка подключения к Zabbix</p>
+    {% endif %}
+{% endblock content %}

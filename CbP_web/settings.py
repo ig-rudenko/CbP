@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/3.2/ref/settings/
 """
 
 from pathlib import Path
+from configparser import ConfigParser
+import sys
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -78,10 +80,22 @@ WSGI_APPLICATION = 'CbP_web.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/3.2/ref/settings/#databases
 
+conf = ConfigParser()
+conf.read(f'{sys.path[0]}/cbp.conf')
+db_host = conf.get('mysql', 'host')
+db_user = conf.get('mysql', 'user')
+db_pass = conf.get('mysql', 'password')
+db_database = conf.get('mysql', 'database')
+assert db_host and db_database and db_user and db_pass, 'Заполните данные [mysql] в файле конфигурации'
+
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'sqlite3.db',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': db_database,
+        'USER': db_user,
+        'PASSWORD': db_pass,
+        'HOST': db_host,
+        'PORT': '3306'
     }
 }
 

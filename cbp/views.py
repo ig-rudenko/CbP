@@ -16,8 +16,8 @@ def get_create_time(file):
 
 def get_backup_dir():
     cfg = ConfigParser()
-    cfg.read(f'{sys.path[0]}/config')
-    return cfg.get('dirs', 'backup_dir')  # Директория сохранения файлов конфигураций
+    cfg.read(f'{sys.path[0]}/cbp.conf')
+    return cfg.get('Path', 'backup_dir')  # Директория сохранения файлов конфигураций
 
 
 def check_superuser(request):
@@ -378,7 +378,34 @@ def devices(request):
             d.auth_group_id = AuthGroup.objects.get(id=d.auth_group_id).auth_group
         if d.backup_group_id:
             d.backup_group_id = BackupGroup.objects.get(id=d.backup_group_id).backup_group
-    return render(request, "device_control/devices.html", {"devices": devices_all})
+
+    sorted_by = request.GET.get('sorted')
+    sorted_order = request.GET.get('sortorder')
+    devices_all = sorted(
+        [
+            {
+                'id': d.id,
+                'ip': d.ip,
+                'device_name': d.device_name,
+                'vendor': d.vendor,
+                'protocol': d.protocol,
+                'auth_group_id': d.auth_group_id,
+                'backup_group_id': d.backup_group_id
+            }
+            for d in devices_all
+        ],
+        key=lambda x: x[sorted_by or 'device_name'],
+        reverse=True if sorted_order == 'up' else False
+    )
+    return render(
+        request,
+        "device_control/devices.html",
+        {
+            "devices": devices_all,
+            "sorted_by": sorted_by,
+            "sorted_order": sorted_order
+        }
+    )
 
 
 def device_edit(request, id: int = 0):
@@ -396,7 +423,10 @@ def device_edit(request, id: int = 0):
             device_form = DevicesForm(initial={
                 'ip': device.ip,
                 'device_name': device.device_name,
-                'vendor': device.vendor
+                'vendor': device.vendor,
+                'protocol': device.protocol,
+                'auth_group': device.auth_group,
+                'backup_group': device.backup_group
             })
         else:
             device_form = DevicesForm()
@@ -406,6 +436,7 @@ def device_edit(request, id: int = 0):
             device.ip = request.POST.get('ip')
             device.device_name = request.POST.get('device_name')
             device.vendor = request.POST.get('vendor')
+            device.protocol = request.POST.get('protocol')
             device.save()
             auth_group = AuthGroup.objects.get(id=request.POST.get('auth_group'))
             auth_group.equipment_set.add(device, bulk=False)

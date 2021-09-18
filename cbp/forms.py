@@ -18,6 +18,11 @@ class AuthModelChoiceField(forms.ModelChoiceField):
         return obj.auth_group
 
 
+class ProtocolModelChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return obj.auth_group
+
+
 class BackupModelChoiceField(forms.ModelChoiceField):
     def label_from_instance(self, obj):
         return obj.backup_group
@@ -27,6 +32,9 @@ class DevicesForm(forms.Form):
     ip = forms.GenericIPAddressField(label='IP адрес')
     device_name = forms.CharField(max_length=50, label='Имя устройства')
     vendor = forms.CharField(max_length=50, label='Vendor: (Cisco, Huawei и т.д.)', required=False)
+    protocol = forms.ChoiceField(
+        choices=[('telnet', 'telnet'), ('ssh', 'ssh')]
+    )
     auth_group = AuthModelChoiceField(
         required=True,
         widget=forms.Select,

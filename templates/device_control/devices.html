@@ -1,11 +1,12 @@
 {% extends "device_control/../device_control/base.html" %}
 
 {% block menu %}
-        <ul class="menu-main">
+<ul class="menu-main">
     <li><a href="/" >Home</a></li>
     <li><a class="current" href="/devices" >Devices</a></li>
     <li><a href="/auth_groups">Auth Groups</a></li>
     <li><a href="/backup_groups">Backup Groups</a></li>
+    <li><a href="/zabbix/groups">From Zabbix</a></li>
     <li><a href="/accounts/logout">Logout</a></li>
 </ul>
 {% endblock %}
@@ -18,32 +19,75 @@
     <form method="get">
         {% csrf_token %}
 
-{#    <h2>Список оборудования</h2>#}
-    {% if devices.count > 0 %}
-    <table class="brd">
+    {% if devices %}
+    <table class="list-table">
         <tr>
-            <th>IP</th>
-            <th>Device name</th>
-            <th>Vendor</th>
-            <th>Auth group</th>
-            <th>Backup group</th>
+            <th>
+                <a href="devices?sorted=ip&sortorder={% if sorted_order == 'up' %}down{% else %}up{% endif %}">
+                    IP
+                    {% if sorted_by == 'ip' %}
+                    <span class="arrow-{% if sorted_order == 'up' %}up{% else %}down{% endif %}"></span>
+                    {% endif %}
+                </a>
+            </th>
+            <th>
+                <a href="devices?sorted=device_name&sortorder={% if sorted_order == 'up' %}down{% else %}up{% endif %}">
+                    Device name
+                    {% if sorted_by == 'device_name' %}
+                    <span class="arrow-{% if sorted_order == 'up' %}up{% else %}down{% endif %}"></span>
+                    {% endif %}
+                </a>
+            </th>
+            <th>
+                <a href="devices?sorted=vendor&sortorder={% if sorted_order == 'up' %}down{% else %}up{% endif %}">
+                    Vendor
+                    {% if sorted_by == 'vendor' %}
+                    <span class="arrow-{% if sorted_order == 'up' %}up{% else %}down{% endif %}"></span>
+                    {% endif %}
+                </a>
+            </th>
+            <th>
+                <a href="devices?sorted=protocol&sortorder={% if sorted_order == 'up' %}down{% else %}up{% endif %}">
+                    Protocol
+                    {% if sorted_by == 'protocol' %}
+                    <span class="arrow-{% if sorted_order == 'up' %}up{% else %}down{% endif %}"></span>
+                    {% endif %}
+                </a>
+            </th>
+            <th>
+                <a href="devices?sorted=auth_group_id&sortorder={% if sorted_order == 'up' %}down{% else %}up{% endif %}">
+                    Auth group
+                    {% if sorted_by == 'auth_group_id' %}
+                    <span class="arrow-{% if sorted_order == 'up' %}up{% else %}down{% endif %}"></span>
+                    {% endif %}
+                </a>
+            </th>
+            <th>
+                <a href="devices?sorted=backup_group_id&sortorder={% if sorted_order == 'up' %}down{% else %}up{% endif %}">
+                    Backup group
+                    {% if sorted_by == 'backup_group_id' %}
+                    <span class="arrow-{% if sorted_order == 'up' %}up{% else %}down{% endif %}"></span>
+                    {% endif %}
+                </a>
+            </th>
         </tr>
         {% for d in devices %}
-        <tr>
+            <tr>
             <td>{{ d.ip }}</td>
             <td>{{ d.device_name }}</td>
             <td>{{ d.vendor }}</td>
+            <td>{{ d.protocol }}</td>
             <td>{{ d.auth_group_id }}</td>
             <td>{{ d.backup_group_id }}</td>
             <td><a class="no_decoration font20" href="device/edit/{{ d.id }}">✎</a> |
                 <a class="no_decoration" style="cursor: pointer" onclick="delete_group('{{ d.id }}', '{{ d.device_name }}')">❌</a></td>
-        </tr>
+            </tr>
         {% endfor %}
     </table>
     {% endif %}
     </form>
 
-        <script>
+    <script>
     function delete_group(id, name) {
         if (confirm("Вы согласны удалить устройство \"" + name + "\" ?")) {
             window.location.href = "device/delete/" + id

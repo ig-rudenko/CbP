@@ -16,6 +16,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from cbp import views
+from cbp import zabbix_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -51,5 +52,8 @@ urlpatterns = [
     path('users/<str:username>', views.user_access_edit),
 
     # DELETE FILE
-    path('delete_file', views.delete_file)
+    path('delete_file', views.delete_file),
+
+    # ZABBIX
+    path('zabbix/groups', zabbix_view.get_groups)
 ]

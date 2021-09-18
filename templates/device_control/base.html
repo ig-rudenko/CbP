@@ -5,17 +5,19 @@
     <meta charset="UTF-8">
     <link rel="stylesheet" href="{% static "css/styles.css" %}" />
     <link rel="stylesheet" href="{% static "css/menu.css" %}" />
+    <link rel="stylesheet" href="{% static "css/checkbox.css" %}" />
     <title>{% block title %}Configuration backup Project{% endblock title %}</title>
 </head>
 <body>
     {% block menu %}
-            <ul class="menu-main">
-        <li><a href="/" >Home</a></li>
-        <li><a href="/devices" >Devices</a></li>
-        <li><a href="/auth_groups">Auth Groups</a></li>
-        <li><a href="/backup_groups">Backup Groups</a></li>
-        <li><a href="/accounts/logout">Logout</a></li>
-    </ul>
+        <ul class="menu-main">
+            <li><a href="/" >Home</a></li>
+            <li><a href="/devices" >Devices</a></li>
+            <li><a href="/auth_groups">Auth Groups</a></li>
+            <li><a href="/backup_groups">Backup Groups</a></li>
+            <li><a href="/zabbix/groups">From Zabbix</a></li>
+            <li><a href="/accounts/logout">Logout</a></li>
+        </ul>
     {% endblock %}
     <h1 class="center_">{% block header %}{% endblock header %}</h1>
     <div class="center_" style="background-color: white; min-height: 100%; padding: 20px">

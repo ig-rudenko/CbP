@@ -51,6 +51,8 @@ table {
     background: white;
     border-collapse: collapse;
     text-align: center;
+    width: 100%;
+    border-spacing: 0;
 }
 th {
     font-weight: normal;
@@ -62,11 +64,15 @@ td {
     color: #669;
     padding: 9px 8px;
     transition: .3s linear;
+    border-bottom: 1px solid #ebeef0;
 }
 tr:hover td {
-    color: #040710;
+    background-color: #ddeaff;
 }
 
+tr th:hover {
+    background-color: #ddeaff;
+}
 
 text {
   border-radius:10px;
@@ -173,3 +179,66 @@ text:hover {
 }
 
 /* КОНЕЦ КНОПКИ ДОБАВИТЬ */
+
+
+
+.list-table tr th {
+    color: #039;
+    height: 100%;
+    overflow: hidden;
+    white-space: nowrap;
+    padding: 6px 5px;
+    vertical-align: bottom;
+    border-bottom: 2px solid #dce2e5;
+    text-align: center;
+}
+
+.list-table tr th a {
+    color: #0275b8;
+    text-decoration: none;
+}
+
+.list-table tr th a {
+    color: #0275b8;
+    text-decoration: none;
+    display: block;
+    position: relative;
+    margin: -1em;
+    padding: 1em;
+    border: 0;
+    transition: background-color .2s ease-out;
+}
+
+.list-table tr th a:visited {
+    color: #0275b8;
+    text-decoration: none;
+}
+
+
+/* СТРЕЛКИ */
+.arrow-up {
+    display: inline-block;
+    height: 0;
+    width: 0;
+    font-size: 0;
+    line-height: 0;
+    margin: 0 0 0 3px;
+
+    border: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 6px solid #1f2c33;
+}
+
+.arrow-down {
+    display: inline-block;
+    height: 0;
+    width: 0;
+    font-size: 0;
+    line-height: 0;
+    margin: 0 0 0 3px;
+
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid #1f2c33;
+}

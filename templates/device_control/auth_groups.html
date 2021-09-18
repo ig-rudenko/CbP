@@ -6,6 +6,7 @@
     <li><a href="/devices" >Devices</a></li>
     <li><a class="current" href="/auth_groups">Auth Groups</a></li>
     <li><a href="/backup_groups">Backup Groups</a></li>
+    <li><a href="/zabbix/groups">From Zabbix</a></li>
     <li><a href="/accounts/logout">Logout</a></li>
 </ul>
 {% endblock %}
@@ -29,8 +30,8 @@
         <tr>
             <td>{{ g.auth_group }}</td>
             <td>{{ g.login }}</td>
-            <td>{{ g.password }}</td>
-            <td>{{ g.privilege_mode_password }}</td>
+            <td>***</td>
+            <td>***</td>
             <td><a class="no_decoration font20" href="auth_group/edit/{{ g.id }}">✎</a> |
                 <a class="no_decoration" style="cursor: pointer" onclick="delete_group('{{ g.id }}', '{{ g.auth_group }}')">❌</a></td>
         </tr>

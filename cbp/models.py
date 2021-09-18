@@ -18,5 +18,6 @@ class Equipment(models.Model):
     ip = models.GenericIPAddressField()
     device_name = models.CharField(max_length=100)
     vendor = models.CharField(max_length=50)
+    protocol = models.CharField(max_length=50, default='telnet')
     auth_group = models.ForeignKey(AuthGroup, on_delete=models.SET_NULL, null=True)
     backup_group = models.ForeignKey(BackupGroup, on_delete=models.SET_NULL, null=True)

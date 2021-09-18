@@ -1,0 +1,51 @@
+{% extends "zabbix/zabbix_groups.html" %}
+
+{% block header %}
+    Zabbix Hosts ({{ group_name }})
+{% endblock header %}
+
+{% block content %}
+    {% if hosts %}
+        <form method="post">
+            {% csrf_token %}
+            <div class="center_">
+                <table class="brd">
+                <tr>
+                    <th>Name</th>
+                    <th>IP</th>
+                    <th></th>
+                </tr>
+                {% for h in hosts %}
+                <tr>
+                    <td style="text-align: left">
+                        {{ h.name }}
+                    </td>
+                    <td>
+                        {{ h.ip }}
+                    </td>
+                    <td>
+                        <label class="container" for="{{ h.hostid }}">
+                            <input type="checkbox" id="{{ h.hostid }}" name="{{ h.hostid }}"
+                                {% if h.status %}
+                                    checked
+                                {% endif %}>
+                            <span class="checkmark"></span>
+                        </label>
+                    </td>
+                </tr>
+                {% endfor %}
+                </table>
+            </div>
+        <div class="center_" style="">
+            <div class="center_">
+                            <input class="atuin-btn" type="submit" value="Добавить узлы сети "
+                   style="margin-top: 20px; margin-bottom: 10px;">
+            </div>
+        </div>
+        </form>
+    {% else %}
+        <div class="center_" style="text-align: center">
+            <h1>Отсутствуют узлы сети</h1>
+        </div>
+    {% endif %}
+{% endblock content %}
