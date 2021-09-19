@@ -25,7 +25,6 @@ services:
       - ./templates:/home/django/templates
       - ./backup.py:/home/django/backup.py
       - ./run.sh:/home/django/run.sh
-      - ./manage.py:/home/django/manage.py
 
   db:
     container_name: cbp-mysql-server
