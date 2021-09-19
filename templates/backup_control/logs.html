@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="{% static "css/styles.css" %}" />
+    <link rel="stylesheet" href="{% static "css/menu.css" %}" />
+    <link rel="stylesheet" href="{% static "css/checkbox.css" %}" />
+    <title>CbP Logs</title>
+</head>
+<body>
+    <ul class="menu-main">
+        <li><a href="/" >Home</a></li>
+        <li><a href="/backup_control/tasks" >Tasks</a></li>
+        <li><a class="current" href="/backup_control/logs">Logs</a></li>
+        <li><a href="/accounts/logout">Logout</a></li>
+    </ul>
+
+    <h1 class="center_">Logs</h1>
+
+    <div class="center_" style="background-color: white; min-height: 100%; padding: 20px; text-align: center">
+        <input class="atuin-btn" style="min-width: 200px" type="button" value="info" onclick="get_logs('info')">
+        <input class="atuin-btn" style="min-width: 200px; background-color: darkorange" type="button" value="error" onclick="get_logs('error')">
+        <input class="atuin-btn" style="min-width: 200px; background-color: #CC3434" type="button" value="critical" onclick="get_logs('critical')">
+        <table id="log-table" style="text-align: center">
+            <tr id="data-table-head"><th>Time</th><th>Module</th><th>Content</th></tr>
+        </table>
+
+    </div>
+
+    <div>{% block footer %}{% endblock footer %}</div>
+</body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script>
+
+    function clear_table() {
+        document.getElementById('log-table').innerHTML = '<tr id="data-table-head"><th>Time</th><th>Module</th><th>Content</th></tr>'
+    }
+
+    function update_table(data) {
+        for (var i = 0; i < data.length; i++) {
+            $('#data-table-head').after(`
+            <tr>
+                <td>${data[i].time}</td><td style="color: #CC3434">${data[i].module}</td><td>${data[i].content}</td>
+            </tr>`)
+        }
+    }
+
+    function get_logs(type) {
+        $.ajax({
+            data: {'type': type},
+            type: 'get',
+            url: 'ajax/logs',
+            success: function (response) {
+                console.log(response)
+                if (response.data.length) {
+                    clear_table()
+                    update_table(response.data)
+                }
+            }
+        })
+    }
+</script>
+</html>

@@ -1,5 +1,5 @@
 {% extends "zabbix/zabbix_groups.html" %}
-
+{% block title %}CbP Zabbix Hosts{% endblock title %}
 {% block header %}
     Zabbix Hosts ({{ group_name }})
 {% endblock header %}
@@ -8,8 +8,8 @@
     {% if hosts %}
         <form method="post">
             {% csrf_token %}
-            <div class="center_">
-                <table class="brd">
+            <div>
+                <table class="brd" style="text-align: center">
                 <tr>
                     <th>Name</th>
                     <th>IP</th>

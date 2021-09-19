@@ -20,7 +20,7 @@
         {% csrf_token %}
 
     {% if devices %}
-    <table class="list-table">
+    <table class="list-table" style="text-align: center">
         <tr>
             <th>
                 <a href="devices?sorted=ip&sortorder={% if sorted_order == 'up' %}down{% else %}up{% endif %}">

@@ -6,7 +6,7 @@
     <form method="get">
         {% csrf_token %}
     {% if users.count > 0 %}
-    <table class="brd">
+    <table style="text-align: center">
         <tr>
             <th>Логин</th>
             <th>Имя</th>
@@ -64,7 +64,7 @@
                 <td style="color: #003399">U</td>
             {% endif %}
 
-            <td><a class="no_decoration font20" href="users/edit/{{ u.id }}">✎</a>
+{#            <td><a class="no_decoration font20" href="users/edit/{{ u.id }}">✎</a>#}
 {#                <a class="no_decoration" href="users/delete/{{ d.id }}">❌</a></td>#}
         </tr>
         {% endfor %}

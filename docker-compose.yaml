@@ -1,0 +1,38 @@
+version: '3.1'
+
+services:
+  django:
+    container_name: cbp
+    image: cbp:0.6
+    environment:
+      DJANGO_SUPERUSER_NAME: root
+      DJANGO_SUPERUSER_EMAIL: root@example.ru
+      DJANGO_SUPERUSER_PASSWORD: password
+    command: /bin/bash ./run.sh
+    ports:
+      - "8000:8000"
+    depends_on:
+      - db
+    volumes:
+      - ./cbp/logs:/logs
+      - ./data/backup:/backups
+      - ./data/diffs:/diffs
+      - ./data:/data
+      - ./cbp.conf:/home/django/cbp.conf
+      - ./static:/home/django/static
+      - ./cbp:/home/django/cbp
+      - ./CbP_web:/home/django/CbP_web
+      - ./templates:/home/django/templates
+      - ./backup.py:/home/django/backup.py
+      - ./run.sh:/home/django/run.sh
+      - ./manage.py:/home/django/manage.py
+
+  db:
+    container_name: cbp-mysql-server
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: 'cbpsij!*!43'
+      MYSQL_DATABASE: 'cbp'
+    restart: always
+    volumes:
+      - ./mysql:/var/lib/mysql

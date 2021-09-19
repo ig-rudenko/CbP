@@ -1,5 +1,5 @@
 {% extends "device_control/base.html" %}
-
+{% block title %}CbP Zabbix Groups{% endblock title %}
 {% block menu %}
     <ul class="menu-main">
         <li><a href="/" >Home</a></li>
@@ -17,8 +17,8 @@
 
 {% block content %}
     {% if groups %}
-        <div class="center_">
-            <table class="brd">
+        <div>
+            <table class="brd" style="text-align: center">
 
             {% for g in groups %}
                 <tr>

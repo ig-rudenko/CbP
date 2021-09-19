@@ -15,8 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from cbp import views
-from cbp import zabbix_view
+from cbp.views import views, zabbix_view, backup_control_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -55,5 +54,13 @@ urlpatterns = [
     path('delete_file', views.delete_file),
 
     # ZABBIX
-    path('zabbix/groups', zabbix_view.get_groups)
+    path('zabbix/groups', zabbix_view.get_groups),
+
+    # BACKUP CONTROL
+    path('backup_control', backup_control_view.show_logs),
+    path('backup_control/logs', backup_control_view.show_logs),
+    path('backup_control/tasks', backup_control_view.show_logs),
+
+    # AJAX
+    path('backup_control/ajax/logs', backup_control_view.get_logs)
 ]

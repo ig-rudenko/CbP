@@ -1,5 +1,5 @@
 {% extends "device_control/../device_control/base.html" %}
-
+{% block title %}CbP Auth Group Edit{% endblock title %}
 {% block menu %}
         <ul class="menu-main">
     <li><a href="/" >Home</a></li>
@@ -15,7 +15,7 @@
 {% block content %}
     <form method="post">
         {% csrf_token %}
-        <table class="center_">
+        <table style="text-align: center">
             {{ form.as_table }}
         </table>
         <div class="center_">

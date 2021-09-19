@@ -11,10 +11,10 @@ timed = str(datetime.now())[0:10]   # текущая дата 'yyyy-mm-dd'
 cfg = ConfigParser()
 try:
     cfg.read(f'{sys.path[0]}/cbp.conf')
-    ftp_directory = cfg.get('FTP', 'directory')
+    ftp_directory = cfg.get('FTP', 'directory').replace('~', sys.path[0])
     if not os.path.exists(ftp_directory):
         os.makedirs(ftp_directory)
-    tftp_directory = cfg.get('TFTP', 'directory')
+    tftp_directory = cfg.get('TFTP', 'directory').replace('~', sys.path[0])
     if not os.path.exists(tftp_directory):
         os.makedirs(tftp_directory)
     ftp_user = cfg.get('FTP', 'username')

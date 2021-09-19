@@ -1,20 +1,22 @@
 <!DOCTYPE html>
 {% load static %}
-<link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="{% static "css/styles.css" %}" />
     <link rel="stylesheet" href="{% static "css/menu.css" %}" />
     <link rel="stylesheet" href="{% static "css/checkbox.css" %}" />
-    <title>{% block title %}CbP Users Control{% endblock title %}</title>
+    <title>{% block title %}CbP Backup Control{% endblock title %}</title>
 </head>
 <body>
-    <ul class="menu-main">
-        <li><a href="/" >Home</a></li>
-        <li><a class="current" href="/users" >Users</a></li>
-        <li><a href="/accounts/logout">Logout</a></li>
-    </ul>
+    {% block menu %}
+        <ul class="menu-main">
+            <li><a href="/" >Home</a></li>
+            <li><a href="/backup_control/tasks" >Tasks</a></li>
+            <li><a href="backup_control/logs">Logs</a></li>
+            <li><a href="/accounts/logout">Logout</a></li>
+        </ul>
+    {% endblock %}
     <h1 class="center_">{% block header %}{% endblock header %}</h1>
     <div class="center_" style="background-color: white; min-height: 100%; padding: 20px">
         {% block content %}{% endblock content %}

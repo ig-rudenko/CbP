@@ -10,10 +10,10 @@ start_time = datetime.now()
 
 cfg = ConfigParser()
 cfg.read(f'{sys.path[0]}/cbp.conf')
-backup_dir = cfg.get('Path', 'backup_dir')      # Директория сохранения файлов конфигураций
+backup_dir = cfg.get('Path', 'backup_dir').replace('~', sys.path[0])      # Директория сохранения файлов конфигураций
 if not os.path.exists(backup_dir):
     os.makedirs(backup_dir)
-tftp_directory = cfg.get('TFTP', 'directory')   # Директория TFTP
+tftp_directory = cfg.get('TFTP', 'directory').replace('~', sys.path[0])   # Директория TFTP
 if not os.path.exists(tftp_directory):
     os.makedirs(tftp_directory)
 ftp_user = cfg.get('FTP', 'username')

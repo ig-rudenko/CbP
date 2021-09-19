@@ -1,16 +1,12 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from django.core.files.storage import FileSystemStorage
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
+from django.http import HttpResponsePermanentRedirect
+from django.contrib.auth.decorators import login_required
 from pyzabbix import ZabbixAPI
 import configparser
 from cbp.core import logs
-from .forms import AuthGroupsForm, BackupGroupsForm, DevicesForm
-from .models import AuthGroup, BackupGroup, Equipment
-from configparser import ConfigParser
+from cbp.models import AuthGroup, BackupGroup, Equipment
 import sys
-import os
-from datetime import datetime
 
 
 def check_superuser(request):
@@ -36,9 +32,8 @@ def get_zabbix_config():
         logs.critical_log.critical(error)
 
 
+@login_required(login_url='accounts/login/')
 def get_groups(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 

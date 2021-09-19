@@ -4,7 +4,7 @@ from configparser import ConfigParser
 
 conf = ConfigParser()
 conf.read(f'{sys.path[0]}/cbp.conf')
-diff_cfg_dir = conf.get('Path', 'diff_cfg_dir')
+diff_cfg_dir = conf.get('Path', 'diff_cfg_dir').replace('~', sys.path[0])
 
 
 def diff_config(object_name: str, new_config: str) -> bool:

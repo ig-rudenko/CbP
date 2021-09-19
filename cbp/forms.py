@@ -10,7 +10,7 @@ class AuthGroupsForm(forms.Form):
 
 
 class BackupGroupsForm(forms.Form):
-    group = forms.CharField(max_length=50, label='Имя папки, для сохранения')
+    group = forms.CharField(max_length=50, label='Уникальное имя папки, для сохранения файлов конфигураций')
 
 
 class AuthModelChoiceField(forms.ModelChoiceField):

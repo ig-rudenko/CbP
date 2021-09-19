@@ -1,5 +1,5 @@
 {% extends "device_control/../device_control/base.html" %}
-
+{% block title %}CbP Backup Groups{% endblock title %}
 {% block menu %}
         <ul class="menu-main">
     <li><a href="/" >Home</a></li>
@@ -20,9 +20,9 @@
         {% csrf_token %}
 {#    <h2>Созданные группы</h2>#}
     {% if groups.count > 0 %}
-    <table class="brd center_">
+    <table style="text-align: center">
         <tr>
-            <th>Group name</th>
+            <th>Имя группы для сохранения файлов конфигураций</th>
         </tr>
         {% for g in groups %}
         <tr>

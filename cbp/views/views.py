@@ -1,9 +1,9 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from django.core.files.storage import FileSystemStorage
+from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect
-from .forms import AuthGroupsForm, BackupGroupsForm, DevicesForm
-from .models import AuthGroup, BackupGroup, Equipment
+from cbp.forms import AuthGroupsForm, BackupGroupsForm, DevicesForm
+from cbp.models import AuthGroup, BackupGroup, Equipment
 from configparser import ConfigParser
 import sys
 import os
@@ -17,7 +17,7 @@ def get_create_time(file):
 def get_backup_dir():
     cfg = ConfigParser()
     cfg.read(f'{sys.path[0]}/cbp.conf')
-    return cfg.get('Path', 'backup_dir')  # Директория сохранения файлов конфигураций
+    return cfg.get('Path', 'backup_dir').replace('~', sys.path[0])  # Директория сохранения файлов конфигураций
 
 
 def check_superuser(request):
@@ -42,9 +42,8 @@ def test(request):
     return HttpResponse(text, content_type="text/plain")
 
 
+@login_required(login_url='accounts/login/')
 def home(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
 
     if request.method == 'GET':
 
@@ -111,10 +110,8 @@ def home(request):
         return HttpResponsePermanentRedirect('/')
 
 
+@login_required(login_url='accounts/login/')
 def download_file(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
     available_backup_groups = [g.backup_group for g in
                                BackupGroup.objects.filter(users__username=current_user.username)]
@@ -132,10 +129,8 @@ def download_file(request):
             return response
 
 
+@login_required(login_url='accounts/login/')
 def list_config_files(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if request.method == 'GET':
         current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
         available_backup_groups = [g.backup_group for g in
@@ -159,10 +154,13 @@ def list_config_files(request):
         config_files_list = sorted(config_files_list, key=get_create_time)
         config_files_list.reverse()
         for file in config_files_list:
+            print(file)
             date_file = os.stat(file).st_mtime
-            config_files.append([os.path.split(file)[1], datetime.fromtimestamp(date_file).strftime('%-d %b %Y %X')])
+            print(date_file)
+            print(os.path.split(file)[1], datetime.fromtimestamp(date_file).strftime('%d %b %Y %X'))
+            config_files.append([os.path.split(file)[1], datetime.fromtimestamp(date_file).strftime('%d %b %Y %X')])
         return render(request, 'devices_config_list.html',
-                          {
+                      {
                               "form": config_files,
                               "backup_group": backup_group,
                               "device_name": device_name,
@@ -189,10 +187,8 @@ def list_config_files(request):
         return HttpResponsePermanentRedirect(f'/config?bg={request.POST.get("backup_group")}&dn={request.POST.get("device_name")}')
 
 
+@login_required(login_url='accounts/login/')
 def show_config_file(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
     available_backup_groups = [g.backup_group for g in
                                BackupGroup.objects.filter(users__username=current_user.username)]
@@ -215,7 +211,7 @@ def show_config_file(request):
         except UnicodeDecodeError:
             file_output = 'Невозможно прочитать данный файл в виде текста'
     return render(request, 'devices_config_show.html',
-                      {
+                  {
                           "form": file_output,
                           "device_name": device_name,
                           "backup_group": backup_group,
@@ -224,10 +220,8 @@ def show_config_file(request):
                   )
 
 
+@login_required(login_url='accounts/login/')
 def delete_file(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -248,10 +242,8 @@ def delete_file(request):
         return HttpResponsePermanentRedirect('/')
 
 
+@login_required(login_url='accounts/login/')
 def auth_groups(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -259,10 +251,8 @@ def auth_groups(request):
     return render(request, "device_control/auth_groups.html", {"form": AuthGroupsForm, "groups": groups})
 
 
+@login_required(login_url='accounts/login/')
 def auth_group_edit(request, id: int = 0):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -292,10 +282,8 @@ def auth_group_edit(request, id: int = 0):
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
+@login_required(login_url='accounts/login/')
 def auth_group_delete(request, id):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -307,10 +295,8 @@ def auth_group_delete(request, id):
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
+@login_required(login_url='accounts/login/')
 def backup_groups(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -318,10 +304,8 @@ def backup_groups(request):
     return render(request, "device_control/backup_groups.html", {"form": BackupGroupsForm, "groups": groups})
 
 
+@login_required(login_url='accounts/login/')
 def backup_group_edit(request, id: int = 0):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -347,10 +331,8 @@ def backup_group_edit(request, id: int = 0):
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
+@login_required(login_url='accounts/login/')
 def backup_group_delete(request, id):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -365,10 +347,8 @@ def backup_group_delete(request, id):
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
+@login_required(login_url='accounts/login/')
 def devices(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -408,10 +388,8 @@ def devices(request):
     )
 
 
+@login_required(login_url='accounts/login/')
 def device_edit(request, id: int = 0):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -450,10 +428,8 @@ def device_edit(request, id: int = 0):
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
+@login_required(login_url='accounts/login/')
 def device_delete(request, id):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -466,10 +442,8 @@ def device_delete(request, id):
         return HttpResponseNotFound("<h2>Данная группа не найдена!</h2>")
 
 
+@login_required(login_url='accounts/login/')
 def users(request):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 
@@ -477,10 +451,8 @@ def users(request):
     return render(request, "user_control/users.html", {"users": u})
 
 
+@login_required(login_url='accounts/login/')
 def user_access_edit(request, username):
-    if str(request.user) == 'AnonymousUser':
-        return HttpResponsePermanentRedirect('accounts/login/')
-
     if not check_superuser(request):
         return HttpResponsePermanentRedirect('/')
 

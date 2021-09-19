@@ -287,9 +287,7 @@ class DeviceConnect:
         """
         Копирует конфигурационный файл(ы) оборудования в директорию, указанную в файле конфигурации cbp.conf
         """
-        dev = None
         if 'huawei-msan' in self.device['vendor']:
-            dev = huawei_msan
             return huawei_msan.backup(
                 telnet_session=self.session,
                 device_ip=self.device['ip'],

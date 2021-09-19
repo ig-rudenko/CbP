@@ -13,8 +13,7 @@ from cbp.core.dc import DeviceConnect
 start_time = datetime.now()
 conf = ConfigParser()
 conf.read(f'{sys.path[0]}/cbp.conf')                    # Файл конфигурации
-backup_dir = conf.get('Path', 'backup_dir')             # Папка сохранения бэкапов
-
+backup_dir = conf.get('Path', 'backup_dir').replace('~', sys.path[0])  # Папка сохранения бэкапов
 thread_count = int(conf.get('Main', 'thread_count'))    # Количество потоков
 
 
@@ -30,7 +29,7 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
         print(session.configuration_str)
         if session.config_diff():
             print(f'starting backup {device_name} ({ip})')
-            # session.backup_configuration()
+            session.backup_configuration(backup_group)
 
     elif ip_check.returncode == 1:
         logs.info_log.info(f"Оборудование недоступно: {device_name} ({ip})")
@@ -57,16 +56,15 @@ def backup_start():
 
             for a_g in auth_groups:
                 if a_g[0] == auth_group_id:
-                    login = a_g[1]
-                    password = a_g[2]
-                    priv_password = a_g[3]
+                    login = a_g[2]
+                    password = a_g[3]
+                    priv_password = a_g[4]
 
             for b_g in backup_groups:
                 if b_g[0] == backup_group_id:
                     backup_group = b_g[1]
 
-            executor.submit(
-                get_backup_device,  # Функция
+            print(
                 ip,
                 device_name,
                 vendor,
@@ -76,6 +74,17 @@ def backup_start():
                 priv_password,
                 backup_group
             )
+            # executor.submit(
+            #     get_backup_device,  # Функция
+            #     ip,
+            #     device_name,
+            #     vendor,
+            #     protocol,
+            #     login,
+            #     password,
+            #     priv_password,
+            #     backup_group
+            # )
 
 
 if __name__ == '__main__':

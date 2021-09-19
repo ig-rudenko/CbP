@@ -5,7 +5,7 @@ import os
 
 conf = ConfigParser()
 conf.read(f'{sys.path[0]}/cbp.conf')
-logs_path = conf.get('Path', 'logs_dir')
+logs_path = conf.get('Path', 'logs_dir').replace('~', sys.path[0])
 if not os.path.exists(logs_path):
     os.makedirs(logs_path)
 
