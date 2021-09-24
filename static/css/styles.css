@@ -30,7 +30,7 @@ select {
     padding: 4px;
     border-radius:4px;
     box-shadow: 2px 2px 8px #999;
-    background: #eee;
+    /*background: #eee;*/
     border: none;
     outline: none;
     display: inline-block;
@@ -79,6 +79,10 @@ text:hover {
   border: 1px solid #aaa;
 }
 
+
+.shadow {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2), 0 16px 20px rgba(0,0,0,0.2);
+}
 
 
 

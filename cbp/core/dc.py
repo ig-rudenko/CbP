@@ -1,53 +1,10 @@
 import pexpect
 from re import findall
 import sys
+import os
 from cbp.profiles import huawei_msan, zyxel, zte, iskratel_slot, cisco
-import yaml
-import ipaddress
 from cbp.core.database import DataBase
-from cbp.core.diff_config import diff_config
 from cbp.core import logs
-
-
-def ip_range(ip_input_range_list: list):
-    """
-    Преобразует диапазон IP адресов в список каждого из них
-        192.168.0.1/24    -> ['192.168.0.1', '192.168.0.2', ... '192.168.0.223', '192.168.0.254']
-
-        192.168.0.1-224   -> ['192.168.0.1', '192.168.0.2', ... '192.168.0.223', '192.168.0.224']
-
-        192.168.0-4.1-224 -> ['192.168.0.1', ... '192.168.0.224',
-                              '192.168.1.1', ... '192.168.1.224',
-                                             ...
-                              '192.168.4.1', ... '192.168.0.224']
-    """
-    result = []  # Итоговый список
-    for ip_input_range in ip_input_range_list:
-        if '/' in ip_input_range:   # Если в записи IP адреса указана маска подсети
-            try:
-                ip = ipaddress.ip_network(ip_input_range)   # Пр
-            except ValueError:
-                ip = ipaddress.ip_interface(ip_input_range).network
-            result += [str(i) for i in list(ip.hosts())]
-        range_ = {}
-        ip = ip_input_range.split('.')
-        for num, oct in enumerate(ip, start=1):
-            if '-' in oct:
-                ip_range = oct.split('-')
-                ip_range[0] = ip_range[0] if 0 <= int(ip_range[0]) < 256 else 0
-                ip_range[1] = ip_range[0] if 0 <= int(ip_range[1]) < 256 else 0
-                range_[num] = oct.split('-')
-            elif 0 <= int(oct) < 256:
-                range_[num] = [oct, oct]
-            else:
-                range_[num] = [0, 0]
-
-        for oct1 in range(int(range_[1][0]), int(range_[1][1])+1):
-            for oct2 in range(int(range_[2][0]), int(range_[2][1])+1):
-                for oct3 in range(int(range_[3][0]), int(range_[3][1])+1):
-                    for oct4 in range(int(range_[4][0]), int(range_[4][1])+1):
-                        result.append(f'{oct1}.{oct2}.{oct3}.{oct4}')
-    return result
 
 
 class DeviceConnect:
@@ -219,9 +176,10 @@ class DeviceConnect:
 
         if '% Unknown command' in version:
             self.session.sendline('display version')
+            self.session.expect('display version')
             while True:
                 m = self.session.expect([r']$', '---- More', r'>$', r'#', pexpect.TIMEOUT, pexpect.EOF, '{'])
-                if m == 5:
+                if m == 6:
                     self.session.expect('}:')
                     self.session.sendline('\n')
                     continue
@@ -232,8 +190,10 @@ class DeviceConnect:
                     self.session.sendcontrol('C')
                 else:
                     break
-            if findall(r'VERSION : MA\d+', version):
+            model = findall(r'VERSION\s*:\s*(MA[\d\S]+)', version)
+            if model:
                 self.device['vendor'] = 'huawei-msan'
+                self.device['model'] = model[0]
 
         if 'show: invalid command, valid commands are' in version:
             self.session.sendline('sys info show')
@@ -279,21 +239,41 @@ class DeviceConnect:
     def config_diff(self) -> bool:
         """
         Сравнивает конфигурацию на наличие изменений
+        Функция сравнивает сохранённый в файле и новый конфиг.
         :return: True - конфиги отличаются; False - конфиги идентичны
         """
-        return diff_config(self.device['name'], self.configuration_str)
+        # Если не существует директории для хранения сравнений конфигураций, то создаем папки
+        if not os.path.exists(f'{sys.path[0]}/diff'):
+            os.makedirs(f'{sys.path[0]}/diff')
+        cfg_file_path = f"{sys.path[0]}/diff/{self.device['name']}"  # Путь к файлу сравнения конфигурации
+        # Если не существует файла для хранения сравнений конфигураций, то создаем его
+        if not os.path.isfile(cfg_file_path):
+            with open(cfg_file_path, 'w'):
+                pass
+        # Считываем последовательно строчки файла с последней сохраненной конфигурацией
+        with open(cfg_file_path, 'r') as f:
+            old_config = [line for line in f]
+        # Записываем в этот же файл новую конфигурацию
+        with open(cfg_file_path, 'w') as w:
+            w.write(self.configuration_str)
+        # Считываем её по строчно, как и предыдущую конфиг-ю, для соблюдения единого формата при сравнении
+        with open(cfg_file_path, 'r') as r:
+            new_config = [line for line in r]
 
-    def backup_configuration(self, backup_group: str) -> bool:
+        # Файлы конфигурации отличаются?
+        if old_config != new_config:
+            return True     # ДА
+        else:
+            return False    # НЕТ
+
+    def backup_configuration(self, backup_dir: str) -> bool:
         """
         Копирует конфигурационный файл(ы) оборудования в директорию, указанную в файле конфигурации cbp.conf
         """
+        print('backup starting...')
         if 'huawei-msan' in self.device['vendor']:
-            return huawei_msan.backup(
-                telnet_session=self.session,
-                device_ip=self.device['ip'],
-                device_name=self.device['name'],
-                backup_group=backup_group
-            )
+            return huawei_msan.backup(session=self.session, device_ip=self.device['ip'],
+                                      device_name=self.device['name'], backup_group=backup_group)
 
         if 'zyxel' in self.device['vendor']:
             return zyxel.backup(

@@ -4,49 +4,63 @@
 
 <div style="padding: 20px">
 
-    <h1>{{ backup_group }}: {{ device_name }}</h1>
+    <h2>
+        <a class="no_decoration" href="/" style="color: darkorchid;">{{ ftp_server }}</a>
+        /
+        <a class="no_decoration" href="/" style="color: #2196F3;">{{ backup_group }}</a>
+        :
+        {{ device_name }}
+    </h2>
 
     <form method="post" enctype="multipart/form-data">
 
         {% csrf_token %}
 
-    <div class="upload_form">
+        <div class="upload_form">
 
-        <label>
+            <label>
 
-            <div>Загрузить</div>
-            <input type="submit" class="main_input_file">
+                <div>Загрузить</div>
+                <input type="submit" class="main_input_file">
 
-        </label>
-        <label>
+            </label>
+            <label>
 
-            <input name="file" type="file" class="main_input_file" />
-            <div>Обзор...</div>
-            <input class="f_name" type="text" id="f_name" value="Файл не выбран." disabled />
-            <input type="text" name="backup_group" style="display: none" value="{{ backup_group }}">
-            <input type="text" name="device_name" style="display: none" value="{{ device_name }}">
+                <input name="file" type="file" class="main_input_file" />
+                <div>Обзор...</div>
+                <input class="f_name" type="text" id="f_name" value="Файл не выбран." disabled />
+                <input type="text" name="bg" style="display: none" value="{{ backup_group }}">
+                <input type="text" name="dn" style="display: none" value="{{ device_name }}">
+                <input type="text" name="fs" value="{{ ftp_server }}" style="display: none">
 
-        </label>
+            </label>
 
-    </div>
+        </div>
     </form>
 
 
     {% if form %}
 
     <table>
-        <tr><th>Имя</th><th>Дата</th></tr>
+        <tr><th>Имя</th><th>Дата</th><th>Размер</th></tr>
         {% for line in form %}
             <tr>
                 <td>
-                    <a class="no_decoration" href="/show?bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.0 }}">
+                    {% if line.3 %}  {# Если файл, то создаем ссылку #}
+                        <a class="no_decoration" href="/show?fs={{ ftp_server }}&bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.0 }}">
                         {{ line.0 }}</a>
+                    {% else %}
+                        {{ line.0 }}
+                    {% endif %}
                 </td>
                 <td>
-                    {{ line.1 }}
+                    {{ line.1 }}  {# Дата #}
                 </td>
                 <td>
-                    <a class="no_decoration" href="/download?bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.0 }}"
+                    {{ line.2 }}  {# Размер #}
+                </td>
+                <td>  {# Скачать файл #}
+                    <a class="no_decoration" href="/download?bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.0 }}&fs={{ ftp_server }}"
                         style="font-size: 26px;">
                             ⇩
                     </a>
@@ -96,7 +110,7 @@
 
     function delete_file(file_name) {
         if (confirm("Вы согласны удалить файл \"" + file_name + "\" ?")) {
-            window.location.href = 'delete_file?bg={{ backup_group }}&dn={{ device_name }}&fn=' + file_name
+            window.location.href = '/delete_file?bg={{ backup_group }}&fs={{ ftp_server }}&dn={{ device_name }}&fn=' + file_name
         }
     }
 

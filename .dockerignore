@@ -1,0 +1,9 @@
+*.md
+logs/*
+data/*
+temp/*
+backups/*
+_config.yml
+docker-compose.yaml
+Dockerfile
+venv/*

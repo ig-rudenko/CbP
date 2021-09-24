@@ -19,7 +19,7 @@
 
 Создаем образ docker:
 
-    docker image build -t cbp:0.6 .
+    docker image build -t cbp:0.7 .
 
 Запускаем docker-compose:
 

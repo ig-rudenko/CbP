@@ -8,3 +8,4 @@ wcwidth>=0.2.5
 PyMySql>=1.0.2
 cryptography>=3.4.8
 pyzabbix>=1.0.0
+dateconverter~=0.1

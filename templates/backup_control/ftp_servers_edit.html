@@ -1,0 +1,13 @@
+{% extends "backup_control/ftp_servers.html" %}
+
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+        <table style="text-align: center">
+            {{ form.as_table }}
+        </table>
+        <div class="center_">
+            <input class="atuin-btn" type="submit" value="Сохранить">
+        </div>
+    </form>
+{% endblock content %}

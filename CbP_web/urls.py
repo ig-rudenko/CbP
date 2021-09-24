@@ -15,7 +15,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from cbp.views import views, zabbix_view, backup_control_view
+from cbp.views import views, zabbix_view, backup_control_view, ftp_servers_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -31,9 +31,9 @@ urlpatterns = [
 
     # BACKUP GROUP
     path('backup_groups', views.backup_groups),
-    path('backup_group/edit/<int:id>', views.backup_group_edit),
     path('backup_group/edit', views.backup_group_edit),
-    path('backup_group/delete/<int:id>', views.backup_group_delete),
+    path('backup_group/edit/<int:bg_id>', views.backup_group_edit),
+    path('backup_group/delete/<int:bg_id>', views.backup_group_delete),
 
     # DEVICES
     path('devices', views.devices),
@@ -43,7 +43,7 @@ urlpatterns = [
 
     # DEVICE CONFIG FILES
     path('config', views.list_config_files),
-    path('download', views.download_file),
+    path('download', views.download_file_),
     path('show', views.show_config_file),
 
     # USER CONTROL
@@ -62,5 +62,11 @@ urlpatterns = [
     path('backup_control/tasks', backup_control_view.show_logs),
 
     # AJAX
-    path('backup_control/ajax/logs', backup_control_view.get_logs)
+    path('backup_control/ajax/logs', backup_control_view.get_logs),
+
+    # FTP SERVERS
+    path('ftp_servers', ftp_servers_views.ftp_servers),
+    path('ftp_servers/edit', ftp_servers_views.ftp_servers_edit),
+    path('ftp_servers/edit/<int:fs_id>', ftp_servers_views.ftp_servers_edit),
+    path('ftp_servers/delete/<int:fs_id>', ftp_servers_views.ftp_server_delete),
 ]

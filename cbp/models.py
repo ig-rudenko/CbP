@@ -2,6 +2,14 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class FtpGroup(models.Model):
+    name = models.CharField(max_length=50, null=True)
+    host = models.GenericIPAddressField()
+    login = models.CharField(max_length=50, null=True)
+    password = models.CharField(max_length=50, null=True)
+    workdir = models.CharField(max_length=255, null=True)
+
+
 class AuthGroup(models.Model):
     auth_group = models.CharField(max_length=50)
     login = models.CharField(max_length=50, null=True)
@@ -12,6 +20,7 @@ class AuthGroup(models.Model):
 class BackupGroup(models.Model):
     backup_group = models.CharField(max_length=50)
     users = models.ManyToManyField(User)
+    ftp_server = models.ForeignKey(FtpGroup, on_delete=models.SET_NULL, null=True)
 
 
 class Equipment(models.Model):

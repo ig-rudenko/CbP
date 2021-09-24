@@ -3,7 +3,7 @@ version: '3.1'
 services:
   django:
     container_name: cbp
-    image: cbp:0.6
+    image: cbp:0.7
     environment:
       DJANGO_SUPERUSER_NAME: root
       DJANGO_SUPERUSER_EMAIL: root@example.ru
@@ -19,12 +19,6 @@ services:
       - ./data/diffs:/diffs
       - ./data:/data
       - ./cbp.conf:/home/django/cbp.conf
-      - ./static:/home/django/static
-      - ./cbp:/home/django/cbp
-      - ./CbP_web:/home/django/CbP_web
-      - ./templates:/home/django/templates
-      - ./backup.py:/home/django/backup.py
-      - ./run.sh:/home/django/run.sh
 
   db:
     container_name: cbp-mysql-server

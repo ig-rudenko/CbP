@@ -12,13 +12,14 @@
     <ul class="menu-main">
         <li><a href="/" >Home</a></li>
         <li><a href="/backup_control/tasks" >Tasks</a></li>
+        <li><a href="/ftp_servers" >FTP servers</a></li>
         <li><a class="current" href="/backup_control/logs">Logs</a></li>
         <li><a href="/accounts/logout">Logout</a></li>
     </ul>
 
     <h1 class="center_">Logs</h1>
 
-    <div class="center_" style="background-color: white; min-height: 100%; padding: 20px; text-align: center">
+    <div class="center_ shadow" style="background-color: white; min-height: 100%; padding: 20px; text-align: center">
         <input class="atuin-btn" style="min-width: 200px" type="button" value="info" onclick="get_logs('info')">
         <input class="atuin-btn" style="min-width: 200px; background-color: darkorange" type="button" value="error" onclick="get_logs('error')">
         <input class="atuin-btn" style="min-width: 200px; background-color: #CC3434" type="button" value="critical" onclick="get_logs('critical')">
@@ -30,7 +31,7 @@
 
     <div>{% block footer %}{% endblock footer %}</div>
 </body>
-<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="{% static 'js/jquery.min.js' %}"></script>
 <script>
 
     function clear_table() {
@@ -47,6 +48,7 @@
     }
 
     function get_logs(type) {
+        clear_table()
         $.ajax({
             data: {'type': type},
             type: 'get',
@@ -54,7 +56,6 @@
             success: function (response) {
                 console.log(response)
                 if (response.data.length) {
-                    clear_table()
                     update_table(response.data)
                 }
             }

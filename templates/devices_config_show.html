@@ -3,7 +3,14 @@
     <div style="padding: 20px;">
     <form method="post">
         {% csrf_token %}
-    <h1>{{ backup_group }}: {{ device_name }}</h1>
+    <h2>
+        <a class="no_decoration" href="/" style="color: darkorchid;">{{ ftp_server }}</a>
+        /
+        <a class="no_decoration" href="/" style="color: #2196F3;">{{ backup_group }}</a>
+        :
+        <a class="no_decoration"  style="color: #003399;"
+           href="/config?fs={{ ftp_server }}&bg={{ backup_group }}&dn={{ device_name }}">{{ device_name }}</a>
+    </h2>
     {% if form %}
         <style>
         textarea {
@@ -15,9 +22,7 @@
             white-space: pre;
         }
         </style>
-        <textarea readonly>
-            {{ form }}
-        </textarea>
+        <textarea readonly>{{ form }}</textarea>
     {% else %}
         <pre>
             Файл пустой
@@ -29,12 +34,12 @@
     document.querySelector('textarea').addEventListener('input', function (e)
     {
         e.target.style.height = 'auto';
-        e.target.style.height = e.target.scrollHeight + 2 + "px";
+        e.target.style.height = e.target.scrollHeight + 20 + "px";
     }
     )
     function fixTextareaSize(textarea) {
         textarea.style.height = 'auto'
-        textarea.style.height = textarea.scrollHeight + 2 + "px"
+        textarea.style.height = textarea.scrollHeight + 20 + "px"
     }
 
     ~function () {

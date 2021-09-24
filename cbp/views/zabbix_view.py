@@ -41,7 +41,7 @@ def get_groups(request):
     try:
         zbx = ZabbixAPI(server=zbx_auth['host'])
         zbx.login(zbx_auth['user'], zbx_auth['password'])
-
+        print('zabbix.api_version:', zbx.api_version())
         if request.GET.get('g'):
 
             def device_exist(ips, devices):
@@ -57,8 +57,9 @@ def get_groups(request):
                     output=['interfaces', 'name', 'status'],
                     selectInterfaces=['ip']
                 )
-                devices_all = Equipment.objects.all()
+                zbx.user.logout()  # Отключаемся, чтобы сессия не висела
 
+                devices_all = Equipment.objects.all()
                 hosts = [
                     {
                         'hostid': line['hostid'],
@@ -86,7 +87,8 @@ def get_groups(request):
                     output=['interfaces', 'name', 'status'],
                     selectInterfaces=['ip']
                 )
-
+                zbx.user.logout()  # Отключаемся, чтобы сессия не висела
+                print(zbx_hosts)
                 for host in zbx_hosts:
                     device = Equipment()
                     device.ip = host['interfaces'][0]['ip']
@@ -102,6 +104,7 @@ def get_groups(request):
 
         # Просмотр групп узлов сети Zabbix
         groups = zbx.hostgroup.get()
+        zbx.user.logout()  # Отключаемся, чтобы сессия не висела
         return render(
             request,
             "zabbix/zabbix_groups.html",

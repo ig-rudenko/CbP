@@ -2,6 +2,7 @@ from datetime import datetime
 from re import sub
 from configparser import ConfigParser
 import pexpect
+import shutil
 from cbp.core import logs
 import sys
 import os
@@ -10,10 +11,11 @@ start_time = datetime.now()
 
 conf = ConfigParser()
 conf.read(f'{sys.path[0]}/cbp.conf')
-backup_server_ip = conf.get('Main', 'backup_server_ip')     # IP адрес сервера бэкапов
+backup_server_ip = conf.get('Main', 'backup_server_ip')  # IP адрес сервера бэкапов
 backup_dir = conf.get('Path', 'backup_dir').replace('~', sys.path[0])                 # Полный путь к папке  бэкапов
 if not os.path.exists(backup_dir):
     os.makedirs(backup_dir)
+    shutil.chown(backup_dir, '')
 
 
 def elog(info, ip, name):
@@ -50,9 +52,9 @@ def get_configuration(session, device: dict):
     return saved_config
 
 
-def backup(telnet_session, device_ip: str, device_name: str, backup_group: str) -> bool:
-    telnet_session.sendline('\n')
-    priority = telnet_session.expect(
+def backup(session, device: dict, backup_dir: str) -> bool:
+    session.sendline('\n')
+    priority = session.expect(
         [
             r'\(config\)#',  # 0 - режим редактирования конфигурации
             r'\S#',          # 1 - привилегированный режим
@@ -60,34 +62,39 @@ def backup(telnet_session, device_ip: str, device_name: str, backup_group: str) 
         ]
     )
     if priority == 2:
-        telnet_session.sendline('enable')
-        telnet_session.sendline('config')
+        session.sendline('enable')
+        session.sendline('config')
     if priority == 1:
-        telnet_session.sendline('config')
+        session.sendline('config')
 
     timed = str(datetime.now())[0:10]   # yyyy-mm-dd
-    if not os.path.exists(f'{backup_dir}/{backup_group}/{device_name}'):
-        os.makedirs(f'{backup_dir}/{backup_group}/{device_name}')
-    telnet_session.sendline(
-        f"backup configuration ftp {backup_server_ip} {backup_group}/{device_name}/{timed}-data.dat"
+
+    session.sendline(
+        f"backup configuration ftp {backup_server_ip} backup_dir/{timed}-data.dat"
     )
-    telnet_session.sendline('y')
-    bcode = telnet_session.expect(
+    print('sent:', f"backup configuration ftp {backup_server_ip} {backup_group}/{device_name}/{timed}-data.dat")
+    session.sendline('y')
+    bcode = session.expect(
         [
             'Backing up files is successful',                       # 0
             'Failure cause: The path does not',                     # 1
             'The file with the same name exists on FTP server',     # 2
             'Backing up files fail'                                 # 3
-        ]
+        ],
+        timeout=300
     )
+    print('return', bcode)
     if bcode == 1:
         elog(f"Путь ftp://{backup_group}/{device_name}/ не существует", device_ip, device_name)
     elif bcode == 2:
         elog(f"Файл {timed}-data.dat уже существет в директории: {backup_dir}/{backup_group}/{device_name}/",
              device_ip, device_name)
     elif bcode == 3:
-        elog(f"Backup FAILED :(", device_ip, device_name)
-    telnet_session.sendline('quit')
-    telnet_session.sendline('y')
+        session.expect(r'Failure cause:')
+        session.expect(r'\S+\(config\)#$')
+        failure_cause = session.before.decode('utf-8').strip().replace('\n', '')
+        elog(f"Backup FAILED! Failure cause: {failure_cause}", device_ip, device_name)
+    session.sendline('quit')
+    session.sendline('y')
 
-    return True if bcode == 0 else False
+    return True if not bcode else False

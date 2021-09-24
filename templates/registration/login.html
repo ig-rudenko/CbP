@@ -8,19 +8,19 @@
 </head>
 &nbsp;
 <body>
-    <div class="center_" style="background-color: white; min-height: 100%; padding-top: 20px">
+    <div class="center_ shadow" style="background-color: white; min-height: 100%; padding-top: 20px; text-align: center">
     {% block content %}
 
     {% if form.errors %}
-      <p>Your username and password didn't match. Please try again.</p>
+      <p>Неверный логин или пароль!</p>
     {% endif %}
 
     {% if next %}
       {% if user.is_authenticated %}
-        <p>Your account doesn't have access to this page. To proceed,
-        please login with an account that has access.</p>
+        <p>У вашей учетной записи нет доступа к этой странице. Чтобы продолжить,
+пожалуйста, войдите в систему с учетной записью, которая имеет доступ</p>
       {% else %}
-        <p>Please login to see this page.</p>
+        <p>Пожалуйста, войдите, чтобы увидеть эту страницу.</p>
       {% endif %}
     {% endif %}
 

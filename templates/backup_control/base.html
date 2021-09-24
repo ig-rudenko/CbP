@@ -10,15 +10,16 @@
 </head>
 <body>
     {% block menu %}
-        <ul class="menu-main">
-            <li><a href="/" >Home</a></li>
-            <li><a href="/backup_control/tasks" >Tasks</a></li>
-            <li><a href="backup_control/logs">Logs</a></li>
-            <li><a href="/accounts/logout">Logout</a></li>
-        </ul>
+    <ul class="menu-main">
+        <li><a href="/" >Home</a></li>
+        <li><a href="/backup_control/tasks" >Tasks</a></li>
+        <li><a href="/ftp_servers" >FTP servers</a></li>
+        <li><a href="/backup_control/logs">Logs</a></li>
+        <li><a href="/accounts/logout">Logout</a></li>
+    </ul>
     {% endblock %}
     <h1 class="center_">{% block header %}{% endblock header %}</h1>
-    <div class="center_" style="background-color: white; min-height: 100%; padding: 20px">
+    <div class="center_ shadow" style="background-color: white; min-height: 100%; padding: 20px">
         {% block content %}{% endblock content %}
     </div>
     <div>{% block footer %}{% endblock footer %}</div>

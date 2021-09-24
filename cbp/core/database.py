@@ -153,6 +153,5 @@ class DataBase:
             command += f"{key}='{update_data[key]}'" if isinstance(update_data[key], str) else f"{key}={update_data[key]}"
             command += ', '
         else:
-            command = command[:-2] + f"WHERE ip='{ip}'"
-        print(command)
+            command = command[:-2] + f" WHERE ip='{ip}'"
         self.execute(command)
