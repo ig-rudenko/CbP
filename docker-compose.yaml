@@ -11,6 +11,8 @@ services:
     command: /bin/bash ./run.sh
     ports:
       - "8000:8000"
+      - "20-21:20-21"
+      - "65500-65515:65500-65515"
     depends_on:
       - db
     volumes:
