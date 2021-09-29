@@ -8,21 +8,44 @@ User: {{ username}}
     </p>
     <form method="post">
     {% csrf_token %}
-    <div class="center_">
-    {% for g, status in backup_groups.items %}
-        <div class="center_">
+    <table style="text-align: center">
+    <tr>
+        <th>FTP</th><th>Backup Group</th>
+    </tr>
+    {% for backup_group_id, backup_group in data.items %}
+        <tr>
+        <td>
+        <table>
+            {% for fs in backup_group.ftp_servers %}
+                <tr>
+                    <td style="border-bottom: none">
+                        <a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">{{ fs.name }}</a>
+                    </td>
+                    <td style="border-bottom: none">
+                        <a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">{{ fs.host }}</a>
+                    </td>
+                    <td style="border-bottom: none">
+                        <a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">ftp://{{ fs.workdir }}</a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+        </td>
+        <td style="text-align: left">
             <label class="container" style="font-family: 'Ubuntu Condensed', sans-serif; font-size: 20px;"
-                               for="{{ g }}">{{ g }}
-            <input type="checkbox" id="{{ g }}" name="{{ g }}"
-                {% if status %}
+                               for="{{ backup_group_id }}">{{ backup_group.name }}
+            <input type="checkbox" id="{{ backup_group_id }}" name="bg_id_{{ backup_group_id }}"
+                {% if backup_group.checked %}
                     checked
                 {% endif %}>
             <span class="checkmark"></span>
             </label>
-        </div>
+
+        </td>
+        </tr>
     {% endfor %}
-    </div>
-    <div class="center_">
+    </table>
+    <div style="text-align: center;">
         <input class="atuin-btn" type="submit" value="Сохранить">
     </div>
     </form>

@@ -10,6 +10,7 @@ from cbp.core import logs
 from configparser import ConfigParser
 from cbp.core.database import DataBase
 from cbp.core.dc import DeviceConnect
+from cbp.core.ftp_send import send_file_to_server
 from pprint import pprint
 
 start_time = datetime.now()
@@ -36,7 +37,11 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
         session.get_saved_configuration()
         if session.config_diff():
             print(f'starting backup {device_name} ({ip})')
-            session.backup_configuration(backup_group)
+            file_path = session.backup_configuration(backup_group)
+            if file_path:  # Если получили файл конфигурации, то отправляем его на ftp сервер
+                print(f'got backup {device_name} ({ip})')
+                status = send_file_to_server(file_path)
+                print(f'sent backup {device_name} ({ip}). Status: {status}')
         else:
             print(session.device['ip'], 'configuration not changed')
 

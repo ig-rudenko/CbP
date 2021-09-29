@@ -1,26 +1,14 @@
 from datetime import datetime
 from re import sub
-from configparser import ConfigParser
 import pexpect
 import shutil
 from cbp.core import logs
-import sys
 import os
-
-start_time = datetime.now()
-
-conf = ConfigParser()
-conf.read(f'{sys.path[0]}/cbp.conf')
-backup_server_ip = conf.get('Main', 'backup_server_ip')  # IP адрес сервера бэкапов
-backup_dir = conf.get('Path', 'backup_dir').replace('~', sys.path[0])                 # Полный путь к папке  бэкапов
-if not os.path.exists(backup_dir):
-    os.makedirs(backup_dir)
-    shutil.chown(backup_dir, '')
 
 
 def elog(info, ip, name):
     """функция логгирования"""
-    logs.error_log.error("%s-> %s: %s" % (ip.ljust(15, '-'), name, info))
+    logs.error_log.error(f'{name} ({ip}): {info}')
 
 
 def get_configuration(session, device: dict):
@@ -52,7 +40,8 @@ def get_configuration(session, device: dict):
     return saved_config
 
 
-def backup(session, device: dict, backup_dir: str) -> bool:
+def backup(session, device: dict, backup_group: str) -> str:
+    backup_server_ip = os.environ.get('LOCAL_HOST_IP')
     session.sendline('\n')
     priority = session.expect(
         [
@@ -67,12 +56,22 @@ def backup(session, device: dict, backup_dir: str) -> bool:
     if priority == 1:
         session.sendline('config')
 
-    timed = str(datetime.now())[0:10]   # yyyy-mm-dd
+    timed = str(datetime.now().strftime('%d-%b-%Y_%H:%M')).replace(':', '_')   # 27-Sep-2021_09_40 (Пример)
+    # Проверяем папку для сохранения
+    if not os.path.exists(f'/home/ftp/{backup_group}/{device["name"]}'):
+        print(f'create: /home/ftp/{backup_group}/{device["name"]}')
+        os.makedirs(f'/home/ftp/{backup_group}/{device["name"]}')
+    # Устанавливаем права
+    shutil.chown(f'/home/ftp/{backup_group}/{device["name"]}', 'cbp_ftp', 'root')
 
+    # Создаем ftp пользователя для передачи файла конфигурации
+    session.sendline('ftp set')
+    session.sendline('cbp_ftp')
+    session.sendline('syyh_33_ss#!')
     session.sendline(
-        f"backup configuration ftp {backup_server_ip} backup_dir/{timed}-data.dat"
+        f"backup configuration ftp {backup_server_ip} {backup_group}/{device['name']}/{timed}-data.dat"
     )
-    print('sent:', f"backup configuration ftp {backup_server_ip} {backup_group}/{device_name}/{timed}-data.dat")
+    print('sent:', f"backup configuration ftp {backup_server_ip} {backup_group}/{device['name']}/{timed}-data.dat")
     session.sendline('y')
     bcode = session.expect(
         [
@@ -85,16 +84,17 @@ def backup(session, device: dict, backup_dir: str) -> bool:
     )
     print('return', bcode)
     if bcode == 1:
-        elog(f"Путь ftp://{backup_group}/{device_name}/ не существует", device_ip, device_name)
+        elog(f"Путь ftp://{backup_server_ip}/{backup_group}/{device['name']}/ не существует", device['ip'], device['name'])
     elif bcode == 2:
-        elog(f"Файл {timed}-data.dat уже существет в директории: {backup_dir}/{backup_group}/{device_name}/",
-             device_ip, device_name)
+        elog(f"Файл {timed}-data.dat уже существет в директории: ftp://{backup_server_ip}/{backup_group}/{backup_group}/{device['name']}/",
+             device['ip'], device['name'])
     elif bcode == 3:
         session.expect(r'Failure cause:')
         session.expect(r'\S+\(config\)#$')
-        failure_cause = session.before.decode('utf-8').strip().replace('\n', '')
-        elog(f"Backup FAILED! Failure cause: {failure_cause}", device_ip, device_name)
+        failure_cause = session.before.decode('utf-8').strip().replace('\n', '').replace('\r', '')  # Причина ошибки
+        elog(f"Backup FAILED! Failure cause: {failure_cause}", device['ip'], device['name'])
     session.sendline('quit')
     session.sendline('y')
 
-    return True if not bcode else False
+    # Возвращаем путь к файлу конфигурации, если бэкап успешен, либо данный файл уже хранится по указанному пути
+    return f"/home/ftp/{backup_group}/{device['name']}/{timed}-data.dat" if not bcode or bcode == 2 else ''

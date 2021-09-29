@@ -9,7 +9,7 @@ from re import findall
 from configparser import ConfigParser
 import sys
 import os
-from datetime import datetime
+from datetime import timedelta, date
 
 
 def check_superuser(request):
@@ -37,6 +37,16 @@ def get_logs(request):
             'data': []
         })
 
+    def date_format(d: str):
+        date_ = d[:10]
+        if str(date.today()) == date_:
+            date_ = 'Сегодня'
+        elif date_ == str(date.today() - timedelta(days=1)):
+            date_ = 'Вчера'
+        elif date_ == str(date.today() - timedelta(days=2)):
+            date_ = 'Позавчера'
+        return f'{date_} {d[11:]}'
+
     conf = ConfigParser()
     conf.read(f'{sys.path[0]}/cbp.conf')  # Файл конфигурации
     logs_dir = conf.get('Path', 'logs_dir').replace('~', sys.path[0])  # Папка сохранения логов
@@ -50,9 +60,9 @@ def get_logs(request):
         })
     logs_data = [
         {
-            'time': line[:19],
-            'module': findall(r'\| (\S+)\s*[->]*', line[19:])[0],
-            'content': findall(r'\| \S+\s*[->]*([\S\W]+)', line[19:])[0]
+            'time': date_format(line[:19]),
+            'module': findall(r'\| (\S+) -> ', line[19:])[0],
+            'content': findall(r'\| \S+ -> (.+)', line[19:])[0]
         }
         for line in log_file
     ]

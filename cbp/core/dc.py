@@ -105,6 +105,7 @@ class DeviceConnect:
                             ],
                             timeout=timeout
                         )
+                        print(login_stat)
                         if login_stat == 7:  # Если необходимо нажать любую клавишу, чтобы продолжить
                             self.session.send(' ')
                             self.session.sendline(login)  # Вводим логин
@@ -266,14 +267,13 @@ class DeviceConnect:
         else:
             return False    # НЕТ
 
-    def backup_configuration(self, backup_dir: str) -> bool:
+    def backup_configuration(self, backup_group: str) -> str:
         """
         Копирует конфигурационный файл(ы) оборудования в директорию, указанную в файле конфигурации cbp.conf
         """
         print('backup starting...')
         if 'huawei-msan' in self.device['vendor']:
-            return huawei_msan.backup(session=self.session, device_ip=self.device['ip'],
-                                      device_name=self.device['name'], backup_group=backup_group)
+            return huawei_msan.backup(session=self.session, device=self.device, backup_group=backup_group)
 
         if 'zyxel' in self.device['vendor']:
             return zyxel.backup(
@@ -300,9 +300,5 @@ class DeviceConnect:
                 backup_group=backup_group
             )
         if 'cisco' in self.device['vendor']:
-            return cisco.backup(
-                telnet_session=self.session,
-                device_ip=self.device['ip'],
-                device_name=self.device['name'],
-                backup_group=backup_group
-            )
+            return cisco.backup(telnet=self.session, device_name=self.device['name'], device_ip=self.device['ip'],
+                                backup_group=backup_group)

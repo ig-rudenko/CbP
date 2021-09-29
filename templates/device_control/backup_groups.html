@@ -19,7 +19,7 @@
     <form method="get">
         {% csrf_token %}
 {#    <h2>Созданные группы</h2>#}
-    {% if groups.count > 0 %}
+    {% if groups %}
     <table style="text-align: center">
         <tr>
             <th>Имя группы для сохранения файлов конфигураций</th>
@@ -28,7 +28,11 @@
         {% for g in groups %}
         <tr>
             <td>{{ g.backup_group }}</td>
-            <td>{{ g.ftp_server_id }}</td>
+            <td>
+                {% for fs in g.ftp_servers %}
+                    <p>{{ fs }}</p>
+                {% endfor %}
+            </td>
             <td><a class="no_decoration font20" href="backup_group/edit/{{ g.id }}">✎</a> |
                 <a class="no_decoration" style="cursor: pointer" onclick="delete_group('{{ g.id }}', '{{ g.backup_group }}')">❌</a></td>
         </tr>

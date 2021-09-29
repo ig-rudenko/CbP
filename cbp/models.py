@@ -20,7 +20,7 @@ class AuthGroup(models.Model):
 class BackupGroup(models.Model):
     backup_group = models.CharField(max_length=50)
     users = models.ManyToManyField(User)
-    ftp_server = models.ForeignKey(FtpGroup, on_delete=models.SET_NULL, null=True)
+    ftp_server = models.ManyToManyField(FtpGroup)
 
 
 class Equipment(models.Model):

@@ -18,7 +18,9 @@
         <li><a href="/accounts/logout">Logout</a></li>
     </ul>
     {% endblock %}
-    <h1 class="center_">{% block header %}{% endblock header %}</h1>
+    <h1 class="center_" style="margin-bottom: 10px">
+        {% block header %}{% endblock header %}
+    </h1>
     <div class="center_ shadow" style="background-color: white; min-height: 100%; padding: 20px">
         {% block content %}{% endblock content %}
     </div>

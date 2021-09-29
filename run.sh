@@ -1,32 +1,15 @@
 #!/bin/bash
-
-# login/pass - ftpuser/syyh_33_ss#!
-cat <<EOF >> /etc/vsftpd.conf;
-write_enable=YES
-chroot_local_user=YES
-EOF
-
-# Запрещаем запись для корня ftp сервера
-chmod a-w /home/ftp;
-# Создаем папку для обмена
-mkdir -p /home/ftp/data;
-chown ftpuser:root /home/ftp/data;
-# Запускаем ftp сервер
-exec /usr/sbin/vsftpd &
-
 # Запускаем Django
 python manage.py makemigrations;
 python manage.py migrate;
 python manage.py makemigrations cbp;
 python manage.py migrate cbp;
-
 if [ "$DJANGO_SUPERUSER_NAME" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]
   then
     python manage.py createsuperuser --username "$DJANGO_SUPERUSER_NAME" --noinput --email "$DJANGO_SUPERUSER_EMAIL" || true ; echo $?;
   else
     python manage.py createsuperuser --username root --noinput --email root@example.com || true ; echo $?;
 fi
-
 if [ "$DJANGO_PORT" ]
   then
     python manage.py runserver 0.0.0.0:$DJANGO_PORT;

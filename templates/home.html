@@ -4,29 +4,32 @@
 
     {% if form %}
         {% for ftp_server_name, groups in form.items %}
-            <h2>FTP server: <a class="no_decoration" style="color: darkorchid;">{{ ftp_server_name }}</a></h2>
+            {# Проходимся по каждому ftp серверу #}
+            {% if groups %}  {# Если у него имеются доступные группы #}
+                <h2>FTP server: <a class="no_decoration" style="color: darkorchid;">{{ ftp_server_name }}</a></h2>
+            {% endif %}
+
+            {# Проходимся по каждой группе #}
             {% for backup_group, devices in groups.items %}
+
+                {# Создаем выдвижной список #}
                 <p class="first"
-                   id="first{{ backup_group }}"
-                   onclick="first('{{ backup_group }}')">{{ backup_group }}
+                   {# В качестве ID указываем группу и ftp сервер #}
+                   id="first{{ backup_group }}{{ ftp_server_name }}"
+                   {# Передаем в функцию название группы и ftp сервера #}
+                   onclick="first('{{ backup_group }}{{ ftp_server_name }}')">{{ backup_group }}
                 </p>
 
+                {# Создаем сворачиваемый список #}
                 <p class="first_blue"
-                   id="first_yelloy{{ backup_group }}"
+                   id="first_yelloy{{ backup_group }}{{ ftp_server_name }}"
                    style="display:none"
-                   onclick="first_yelloy('{{ backup_group }}')">{{ backup_group }}
+                   onclick="first_yelloy('{{ backup_group }}{{ ftp_server_name }}')">{{ backup_group }}
                 </p>
 
-                <div id="{{ backup_group }}" style="display:none">
-                    <form method="post">
-                        {% csrf_token %}
+                {# Данные в сворачиваемом списке #}
+                <div id="{{ backup_group }}{{ ftp_server_name }}" style="display:none">
 
-                        <input type="button" value="Добавить" id="{{ backup_group }}-show-button" class="submit"
-                               onclick="show_add_folder_block('{{ backup_group }}')">
-                        <label for="{{ backup_group }}-text-input"></label><input type="text" name="{{ backup_group }}" required id="{{ backup_group }}-text-input" style="display: none">
-                        <input type="submit" id="{{ backup_group }}-submit" class="submit" value="Добавить папку" style="display: none">
-
-                    </form>
                     <table style="text-align: center">
                     {% for device_name, c in devices.items %}
                         <tr>
@@ -37,6 +40,7 @@
                     {% endfor %}
                    </table>
                 </div>
+
             {% endfor %}
         {% endfor %}
     {% else %}

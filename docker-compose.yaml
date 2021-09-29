@@ -4,26 +4,25 @@ services:
   django:
     container_name: cbp
     image: cbp:0.7
+    hostname: cbp_host
     environment:
       DJANGO_SUPERUSER_NAME: root
       DJANGO_SUPERUSER_EMAIL: root@example.ru
       DJANGO_SUPERUSER_PASSWORD: password
+      LOCAL_HOST_IP: '10.29.4.135'
     command: /bin/bash ./run.sh
     ports:
       - "8000:8000"
-      - "20-21:20-21"
-      - "65500-65515:65500-65515"
     depends_on:
       - db
     volumes:
-      - ./cbp/logs:/logs
-      - ./data/backup:/backups
-      - ./data/diffs:/diffs
-      - ./data:/data
+      - ./cbp:/home/django/cbp
+      - ./backup.py:/home/django/backup.py
       - ./cbp.conf:/home/django/cbp.conf
 
   db:
     container_name: cbp-mysql-server
+    hostname: cbp_mysql_bd
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: 'cbpsij!*!43'
@@ -31,3 +30,19 @@ services:
     restart: always
     volumes:
       - ./mysql:/var/lib/mysql
+
+  ftpd_server:
+    image: stilliard/pure-ftpd
+    container_name: cbp-ftpd
+    hostname: cbp_ftpd_server
+    ports:
+      - "21:21"
+      - "30000-30009:30000-30009"
+#    volumes:
+#      - "./ftp:/home/ftpuser"
+    environment:
+      PUBLICHOST: "localhost"
+      FTP_USER_NAME: ftpuser
+      FTP_USER_PASS: pass
+      FTP_USER_HOME: /home/ftpuser
+    restart: always

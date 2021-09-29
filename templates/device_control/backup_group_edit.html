@@ -1,4 +1,4 @@
-{% extends "device_control/../device_control/base.html" %}
+{% extends "device_control/base.html" %}
 {% block title %}CbP Backup Group Edit{% endblock title %}
 {% block menu %}
         <ul class="menu-main">
@@ -15,11 +15,41 @@
 {% block content %}
     <form method="post">
         {% csrf_token %}
-        <table style="text-align: center">
-            {{ form.as_table }}
+        <h1 style="margin-top: 0">{{ backup_group.name }}</h1>
+        {% if create_new %}
+            <label for="bg" style="color: #003399; font-size: 18px">
+                Укажите название группы
+                <input name="bg" type="text" style="width: 300px" required>
+            </label>
+        {% endif %}
+
+        <input name="bg_id" value="{{ backup_group.id }}" style="display: none">
+
+        <h4>Выберите, на какие FTP сервера будут клонироваться файлы конфигурации из данной группы</h4>
+
+        <table>
+        <tr><th>FTP сервер</th><th>IP</th><th>Расположение</th></tr>
+            {% for fs in ftp_servers %}
+                <tr>
+                    <td><a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">{{ fs.name }}</a></td>
+                    <td><a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">{{ fs.ip }}</a></td>
+                    <td><a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">ftp://{{ fs.wd }}{{ backup_group.name }}</a></td>
+                    <td style="max-width: 1px">
+                        <label class="container" for="{{ fs.name }}_{{ fs.ip }}">
+                        <input type="checkbox" name="{{ fs.name }}_{{ fs.ip }}" id="{{ fs.name }}_{{ fs.ip }}"
+                            {% if fs.is_checked %}
+                                checked
+                            {% endif %}>
+                        <span class="checkmark"></span>
+                        </label>
+                    </td>
+                </tr>
+            {% endfor %}
         </table>
-        <div class="center_">
+
+        <div style="text-align: center;">
             <input class="atuin-btn" type="submit" value="Сохранить">
         </div>
+
     </form>
 {% endblock content %}
