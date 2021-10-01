@@ -47,3 +47,14 @@ def backup(session, device_name: str, device_ip: str, backup_group: str, backup_
         return ''
 
     # Подключаемся к FTP серверу
+    session.sendline(f'ftp {backup_server["ip"]}')
+    session.expect(r'Connected to')
+    session.sendline(backup_server['login'])
+    session.sendline(backup_server['password'])
+    session.sendline(f'cd {backup_server["workdir"] or "/"}')
+    session.sendline('passive')
+    session.sendline(f'mkdir {backup_group}')
+    session.sendline(f'mkdir {backup_group}/{device_name}')
+    session.sendline(f'cd {backup_group}/{device_name}')
+    session.sendline(f'put {config_file_name}')
+    session.expect('')
