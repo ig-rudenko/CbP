@@ -6,7 +6,7 @@ COPY . .
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     apt-get update && \
-    apt-get install -y iputils-ping openssh-client telnet nano cron&& \
+    apt-get install -y iputils-ping openssh-client telnet nano cron ftp&& \
     mkdir /backups /logs
 
 EXPOSE 20-21 8000 65500-65515

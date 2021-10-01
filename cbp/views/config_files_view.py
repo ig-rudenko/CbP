@@ -23,7 +23,7 @@ def home(request):
         current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
         available_backup_groups_ids = [g.id for g in
                                    BackupGroup.objects.filter(users__username=current_user.username)]
-        print(available_backup_groups_ids)
+
         # Все доступные группы у пользователя
         if not available_backup_groups_ids and not current_user.is_superuser:
             # Если у данного пользователя нет доступных групп и он не суперпользователь, то ничего не выводим
@@ -52,9 +52,8 @@ def home(request):
                 # Backup группы
 
                 for group in dir_list:  # Для каждого найденного файла в рабочей директории
-
                     # Определяем имя группы
-                    gr = findall(r'^\S+\s+\d+\s+\S+\s+\d+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', group)[0]
+                    gr = findall(r'^\S+\s+\S+\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', group)[0]
 
                     try:
                         # Определяем ID backup_group по имени группы у текущего сервера

@@ -2,7 +2,7 @@ import pexpect
 from re import findall
 import sys
 import os
-from cbp.profiles import huawei_msan, zyxel, zte, iskratel_slot, cisco
+from cbp.profiles import huawei_msan, zyxel, zte, iskratel_slot, cisco, huawei
 from cbp.core.database import DataBase
 from cbp.core import logs
 
@@ -221,6 +221,12 @@ class DeviceConnect:
         """
         Считываем сохраненную конфигурацию у оборудования
         """
+        if 'huawei' in self.device['vendor']:
+            self.configuration_str = huawei.get_configuration(
+                session=self.session,
+                privilege_mode_password=self.__auth_profile['privilege_mode_password']
+            )
+
         if 'huawei-msan' in self.device['vendor']:
             self.configuration_str = huawei_msan.get_configuration(session=self.session, device=self.device)
         if 'zyxel' in self.device['vendor']:
@@ -232,9 +238,7 @@ class DeviceConnect:
         if 'iskratel' in self.device['vendor']:
             self.configuration_str = iskratel_slot.get_configuration(session=self.session, device=self.device)
         if 'cisco' in self.device['vendor']:
-            self.configuration_str = cisco.get_configuration(
-                telnet_session=self.session
-            )
+            self.configuration_str = cisco.get_configuration(session=self.session)
         return self.configuration_str
 
     def config_diff(self) -> bool:
@@ -267,7 +271,7 @@ class DeviceConnect:
         else:
             return False    # НЕТ
 
-    def backup_configuration(self, backup_group: str) -> str:
+    def backup_configuration(self, backup_group: str, backup_server: dict):
         """
         Копирует конфигурационный файл(ы) оборудования в директорию, указанную в файле конфигурации cbp.conf
         """
@@ -300,5 +304,5 @@ class DeviceConnect:
                 backup_group=backup_group
             )
         if 'cisco' in self.device['vendor']:
-            return cisco.backup(telnet=self.session, device_name=self.device['name'], device_ip=self.device['ip'],
-                                backup_group=backup_group)
+            return cisco.backup(session=self.session, device_name=self.device['name'], device_ip=self.device['ip'],
+                                backup_group=backup_group, backup_server=backup_server)
