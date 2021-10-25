@@ -276,8 +276,20 @@ class DeviceConnect:
         Копирует конфигурационный файл(ы) оборудования в директорию, указанную в файле конфигурации cbp.conf
         """
         print('backup starting...')
+        if 'huawei' in self.device['vendor']:
+            return huawei.backup(
+                session=self.session,
+                device=self.device,
+                backup_group=backup_group,
+                backup_server=backup_server
+            )
         if 'huawei-msan' in self.device['vendor']:
-            return huawei_msan.backup(session=self.session, device=self.device, backup_group=backup_group)
+            return huawei_msan.backup(
+                session=self.session,
+                device=self.device,
+                backup_group=backup_group,
+                backup_server=backup_server
+            )
 
         if 'zyxel' in self.device['vendor']:
             return zyxel.backup(
@@ -304,5 +316,10 @@ class DeviceConnect:
                 backup_group=backup_group
             )
         if 'cisco' in self.device['vendor']:
-            return cisco.backup(session=self.session, device_name=self.device['name'], device_ip=self.device['ip'],
-                                backup_group=backup_group, backup_server=backup_server)
+            return cisco.backup(
+                session=self.session,
+                device_name=self.device['name'],
+                device_ip=self.device['ip'],
+                backup_group=backup_group,
+                backup_server=backup_server
+            )

@@ -114,7 +114,7 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
                         'ip': LOCAL_HOST_BACKUP_IP,
                         'login': LOCAL_FTP_USER_NAME,
                         'password': LOCAL_FTP_USER_PASS,
-                        'workdir': ''
+                        'workdir': '/'
                     }
                 )
 
@@ -244,6 +244,6 @@ def backup_start(available_backup_group: str = ''):
 
 
 if __name__ == '__main__':
-    backup_start()
+    backup_start(sys.argv[1] if len(sys.argv) == 2 else '')
 
     logs.info_log.info(f"Общее время выполнения скрипта: {str(datetime.now() - start_time)}")

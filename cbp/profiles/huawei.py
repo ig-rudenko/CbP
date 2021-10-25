@@ -1,4 +1,5 @@
 import pexpect
+from datetime import datetime
 from re import findall
 from cbp.core.commands import send_command as cmd
 
@@ -37,7 +38,11 @@ def get_configuration(session, privilege_mode_password: str):
     return send_command(session, 'display saved-configuration')
 
 
-def backup(session, device_name: str, device_ip: str, backup_group: str, backup_server: dict):
+def backup(session, device: dict, backup_group: str, backup_server: dict):
+    """
+    Подключаемся к FTP серверу непосредственно от сетевого оборудования, создаем необходимые директории и
+    отправляем файл конфигурации на сервер
+    """
     # Сессия должна быть от привилегированного пользователя
     config_file_name = findall(r'Startup saved-configuration file:\s+flash:\/(\S+)',
                                send_command(session, 'display startup'))
@@ -48,13 +53,52 @@ def backup(session, device_name: str, device_ip: str, backup_group: str, backup_
 
     # Подключаемся к FTP серверу
     session.sendline(f'ftp {backup_server["ip"]}')
-    session.expect(r'Connected to')
+    session.expect(r'[Tt]rying')  # Ожидаем подключения
+    if session.expect([r'Connected to', pexpect.TIMEOUT], timeout=10):
+        # Если не удалось подключиться, то ftp сервер недоступен
+        print(f'FTP сервер {backup_server["ip"]} недоступен, не удалось подключиться')
+        return ''
+
     session.sendline(backup_server['login'])
     session.sendline(backup_server['password'])
-    session.sendline(f'cd {backup_server["workdir"] or "/"}')
+
+    # Проверяем статус подключения к ftp серверу
+    conn_status = session.expect(
+        [
+            r'\[ftp\]|230',                  # 230  -  Пользователь идентифицирован, продолжаем
+            r'530|connection was closed'     # 530  -  Вход не выполнен! Неверный логин или пароль
+        ],
+        timeout=10
+    )
+
+    if conn_status:
+        print('530  -  Вход не выполнен! Неверный логин или пароль')
+        return ''  # Если не удалось подключиться
+
+    # Включаем пассивный режим передачи
     session.sendline('passive')
+    # Переходим в рабочую директорию
+    session.sendline(f'cd {backup_server["workdir"] or "/"}')
+    # Создаем группу
     session.sendline(f'mkdir {backup_group}')
-    session.sendline(f'mkdir {backup_group}/{device_name}')
-    session.sendline(f'cd {backup_group}/{device_name}')
-    session.sendline(f'put {config_file_name}')
-    session.expect('')
+    # Создаем папку для текущего устройства в группе
+    session.sendline(f'mkdir {backup_group}/{device["name"]}')
+    # Переходим в нее
+    session.sendline(f'cd {backup_group}/{device["name"]}')
+    if session.expect(['250', '550']):
+        print(f'Не удалось перейти в папку {backup_server["workdir"]}/{backup_group}/{device["name"]}')
+        return ''
+    session.expect(r'\[ftp\]$')
+
+    # Определяем текущее время
+    timed = str(datetime.now().strftime('%d-%b-%Y_%H:%M')).replace(':', '_')  # 27-Sep-2021_09_40 (Пример)
+
+    # Помещаем файл конфигурации в файл с названием времени создания в текущей папке
+    session.sendline(f'put {config_file_name} {timed}_{config_file_name}')
+    backup_status = session.expect([
+        r'226',  # Бэкап успешен
+        r'Error: Failed to run this command because opening local file is unsuccessful'  # Неверное имя файла конфигурации
+    ])
+
+    # Возвращаем путь к файлу на ftp сервере
+    return f'{backup_server["workdir"]}/{backup_group}/{device["name"]}/{timed}_{config_file_name}' if not backup_status else ''

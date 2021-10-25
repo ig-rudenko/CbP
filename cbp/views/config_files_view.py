@@ -75,7 +75,7 @@ def home(request):
                     ftp.retrlines(f'LIST {wd}/{group}', group_list.append)
 
                     # Создаем упорядоченный список папок для группы
-                    group_list = sorted([findall(r'^\S+\s+\d+\s+\S+\s+\d+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', g)[0]
+                    group_list = sorted([findall(r'^\S+\s+\d+\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', g)[0]
                                          for g in group_list if g.startswith('d')])
                     for devs in group_list:  # Для каждого устройства в группе
                         ftp_dirs[ftp_server.name][group][devs] = []
@@ -186,9 +186,9 @@ def list_config_files(request):
 
         for file in config_files_list:
             is_file = False if file.startswith('d') else True
-            file_name = findall(r'^\S+\s+\d+\s+\S+\s+\d+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', file)[0]
-            file_create = format_time(findall(r'^\S+\s+\d+\s+\S+\s+\d+\s+\d+\s+(\S+\s+\d+\s+\S+)\s+.+$', file)[0])
-            file_size = sizeof_fmt(int(findall(r'^\S+\s+\d+\s+\S+\s+\d+\s+(\d+)\s+\S+\s+\d+\s+\S+\s+.+$', file)[0])) if is_file else 'папка'
+            file_name = findall(r'^\S+\s+\d+\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', file)[0]
+            file_create = format_time(findall(r'^\S+\s+\d+\s+\S+\s+\S+\s+\d+\s+(\S+\s+\d+\s+\S+)\s+.+$', file)[0])
+            file_size = sizeof_fmt(int(findall(r'^\S+\s+\d+\s+\S+\s+\S+\s+(\d+)\s+\S+\s+\d+\s+\S+\s+.+$', file)[0])) if is_file else 'папка'
             config_files.append([file_name, file_create, file_size, is_file])
         # Сортируем файлы по дате создания
         config_files = sorted(config_files, key=lambda x: x[1].date.toordinal())

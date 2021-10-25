@@ -1,4 +1,6 @@
 #!/bin/bash
+# Запускаем CRON
+service cron start;
 # Запускаем Django
 python manage.py makemigrations;
 python manage.py migrate;

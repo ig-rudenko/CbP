@@ -40,13 +40,12 @@ def get_configuration(session, device: dict):
     return saved_config
 
 
-def backup(session, device: dict, backup_group: str) -> str:
-    backup_server_ip = os.environ.get('LOCAL_HOST_IP')
+def backup(session, device: dict, backup_group: str, backup_server: dict) -> str:
     session.sendline('\n')
     priority = session.expect(
         [
             r'\(config\)#',  # 0 - режим редактирования конфигурации
-            r'\S#',          # 1 - привилегированный режим
+            r'\S+#',          # 1 - привилегированный режим
             '>'              # 2 - пользовательский режим
         ]
     )
@@ -66,12 +65,12 @@ def backup(session, device: dict, backup_group: str) -> str:
 
     # Создаем ftp пользователя для передачи файла конфигурации
     session.sendline('ftp set')
-    session.sendline('cbp_ftp')
-    session.sendline('syyh_33_ss#!')
+    session.sendline(backup_server["login"])
+    session.sendline(backup_server['password'])
     session.sendline(
-        f"backup configuration ftp {backup_server_ip} {backup_group}/{device['name']}/{timed}-data.dat"
+        f"backup configuration ftp {backup_server['ip']} {backup_group}/{device['name']}/{timed}-data.dat"
     )
-    print('sent:', f"backup configuration ftp {backup_server_ip} {backup_group}/{device['name']}/{timed}-data.dat")
+    print('sent:', f"backup configuration ftp {backup_server['ip']} {backup_group}/{device['name']}/{timed}-data.dat")
     session.sendline('y')
     bcode = session.expect(
         [
@@ -84,9 +83,9 @@ def backup(session, device: dict, backup_group: str) -> str:
     )
     print('return', bcode)
     if bcode == 1:
-        elog(f"Путь ftp://{backup_server_ip}/{backup_group}/{device['name']}/ не существует", device['ip'], device['name'])
+        elog(f"Путь ftp://{backup_server['ip']}/{backup_group}/{device['name']}/ не существует", device['ip'], device['name'])
     elif bcode == 2:
-        elog(f"Файл {timed}-data.dat уже существет в директории: ftp://{backup_server_ip}/{backup_group}/{backup_group}/{device['name']}/",
+        elog(f"Файл {timed}-data.dat уже существет в директории: ftp://{backup_server['ip']}/{backup_group}/{backup_group}/{device['name']}/",
              device['ip'], device['name'])
     elif bcode == 3:
         session.expect(r'Failure cause:')

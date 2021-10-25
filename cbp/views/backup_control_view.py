@@ -1,15 +1,15 @@
 from django.shortcuts import render
 from django.contrib.auth.models import User
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponsePermanentRedirect, JsonResponse
+from django.http import HttpResponsePermanentRedirect, JsonResponse
 from django.contrib.auth.decorators import login_required
-import configparser
-from cbp.core import logs
-from cbp.forms import AuthGroupsForm, BackupGroupsForm, DevicesForm
+from cbp.models import BackupGroup
+
 from re import findall
 from configparser import ConfigParser
+from datetime import timedelta, date
+
 import sys
 import os
-from datetime import timedelta, date
 
 
 def check_superuser(request):
@@ -70,3 +70,46 @@ def get_logs(request):
     return JsonResponse({
         'data': logs_data
     })
+
+
+@login_required(login_url='accounts/login/')
+def tasks(request):
+    backup_groups = [bg.backup_group for bg in BackupGroup.objects.all()]
+
+    if request.method == 'POST':
+        print(request.POST)
+        cron_task = []  # Список задач, которые будут записаны в cron
+        for bg in backup_groups:
+            if request.POST.get(f'min-{bg}'):
+                cron_min = request.POST.get(f'min-{bg}')
+                cron_hour = request.POST.get(f'hour-{bg}') or '*'
+                cron_day = request.POST.get(f'day-{bg}') or '*'
+                cron_month = request.POST.get(f'month-{bg}') or '*'
+                cron_week_day = request.POST.get(f'week_day-{bg}') or '*'
+
+                cron_task.append(f'{cron_min} {cron_hour} {cron_day} {cron_month} {cron_week_day} '
+                                 f'python /home/django/backup.py {bg}\n')
+        print(cron_task)
+        with open('/var/spool/cron/crontabs/root', 'w') as cron_file:
+            cron_file.writelines(cron_task)
+
+        return HttpResponsePermanentRedirect('/backup_control/tasks')
+
+
+    print(request.GET)
+    with open('/var/spool/cron/crontabs/root') as cron_file:
+        crontab_list = [str(l) for l in cron_file.readlines() if not l.startswith('#')]
+
+    if not crontab_list:
+        # Пустая таблица crontab
+        print('cron is empty')
+
+    result = dict.fromkeys(backup_groups)  # Группы и их период (по умолчанию None)
+
+    for cron_task in crontab_list:
+        if s := findall(r'backup\.py (\S+)', cron_task):
+            if s[0] in backup_groups:  # Нашли задачу для группы
+                result[s[0]] = findall(r'^(\S+) (\S+) (\S+) (\S+) (\S+) ', cron_task)[0]
+    print(result)
+
+    return render(request, 'backup_control/tasks.html', {'cron': result})

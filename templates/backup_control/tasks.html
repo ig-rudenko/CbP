@@ -1,0 +1,39 @@
+{% extends "backup_control/base.html" %}
+{% block title %}TASKS{% endblock title %}
+{% block menu %}
+    <ul class="menu-main">
+        <li><a href="/" >Home</a></li>
+        <li><a class="current" href="/backup_control/tasks" >Tasks</a></li>
+        <li><a href="/ftp_servers" >FTP servers</a></li>
+        <li><a href="/backup_control/logs">Logs</a></li>
+        <li><a href="/accounts/logout">Logout</a></li>
+    </ul>
+{% endblock %}
+
+{% block header %}
+    Backup Period
+
+{% endblock header %}
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+    <table>
+    <tr><th>Backup group</th><th>Min</th><th>Hour</th><th>Day</th><th>Month</th><th>Day of week</th></tr>
+    {% for group, period in cron.items %}
+        <tr style="text-align: center">
+            <td>{{ group }}</td>
+            <td><input name="min-{{ group }}" type="text" value="{{ period.0 }}" style="width: 30px"></td>
+            <td><input name="hour-{{ group }}" type="text" value="{{ period.1 }}" style="width: 30px"></td>
+            <td><input name="day-{{ group }}" type="text" value="{{ period.2 }}" style="width: 50px"></td>
+            <td><input name="month-{{ group }}" type="text" value="{{ period.3 }}" style="width: 50px"></td>
+            <td><input name="week_day-{{ group }}" type="text" value="{{ period.4 }}" style="width: 50px"></td>
+        </tr>
+    {% endfor %}
+    </table>
+    <div style="text-align: center">
+        <input class="atuin-btn" type="submit" value="Установить">
+    </div>
+    </form>
+
+
+{% endblock content %}

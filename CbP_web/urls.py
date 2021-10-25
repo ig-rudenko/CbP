@@ -58,7 +58,7 @@ urlpatterns = [
     # BACKUP CONTROL
     path('backup_control', backup_control_view.show_logs),
     path('backup_control/logs', backup_control_view.show_logs),
-    path('backup_control/tasks', backup_control_view.show_logs),
+    path('backup_control/tasks', backup_control_view.tasks),
 
     # AJAX
     path('backup_control/ajax/logs', backup_control_view.get_logs),
