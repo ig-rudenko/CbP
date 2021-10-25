@@ -2,12 +2,11 @@ from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseNotFound, HttpResponsePermanentRedirect
 from cbp.models import AuthGroup, BackupGroup, FtpGroup
-from cbp.views.user_checks import check_superuser
 
 
 @login_required(login_url='accounts/login/')
 def backup_groups(request):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     groups = []
@@ -33,7 +32,7 @@ def backup_groups(request):
 
 @login_required(login_url='accounts/login/')
 def backup_group_edit(request, bg_id: int = 0):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
     try:
         if request.method == "GET":
@@ -89,7 +88,7 @@ def backup_group_edit(request, bg_id: int = 0):
 
 @login_required(login_url='accounts/login/')
 def backup_group_delete(request, bg_id):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     try:

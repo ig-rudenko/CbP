@@ -2,26 +2,14 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.http import HttpResponsePermanentRedirect, HttpResponseNotFound
 from django.contrib.auth.decorators import login_required
-import configparser
-from cbp.core import logs
+
 from cbp.models import FtpGroup, BackupGroup
 from cbp.forms import FtpServersForm
-import sys
-
-
-def check_superuser(request):
-    try:
-        if not User.objects.get(username=str(request.user)).is_superuser:
-            return 0
-        else:
-            return 1
-    except Exception:
-        return 0
 
 
 @login_required(login_url='accounts/login/')
 def ftp_servers(request):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
     ftp_servers_all = FtpGroup.objects.all()
     return render(request, "backup_control/ftp_servers.html", {"ftp_servers": ftp_servers_all})
@@ -30,7 +18,7 @@ def ftp_servers(request):
 @login_required(login_url='accounts/login/')
 def ftp_server_delete(request, fs_id):
     try:
-        if not check_superuser(request):
+        if not request.user.is_superuser:
             return HttpResponsePermanentRedirect('/')
         fs = FtpGroup.objects.get(id=fs_id)
         fs.delete()

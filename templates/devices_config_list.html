@@ -9,10 +9,13 @@
         /
         <a class="no_decoration" href="/" style="color: #2196F3;">{{ backup_group }}</a>
         :
-        {{ device_name }}
+        {{ device_name }}{% if superuser %}
+            <a class="no_decoration font20" href="device/edit/{{ device.id }}">✎</a>
+        {% endif %}
     </h2>
 
     <form method="post" enctype="multipart/form-data">
+        <h3>{{ device.vendor }}</h3>
 
         {% csrf_token %}
 

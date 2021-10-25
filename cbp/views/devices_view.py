@@ -3,12 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseNotFound, HttpResponsePermanentRedirect
 from cbp.forms import DevicesForm
 from cbp.models import AuthGroup, BackupGroup, Equipment
-from cbp.views.user_checks import check_superuser
 
 
 @login_required(login_url='accounts/login/')
 def devices(request):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     devices_all = Equipment.objects.all()
@@ -49,10 +48,9 @@ def devices(request):
 
 @login_required(login_url='accounts/login/')
 def device_edit(request, id: int = 0):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
-    check_superuser(request)
     try:
 
         if id:  # Если редактируем существующую запись
@@ -93,10 +91,9 @@ def device_edit(request, id: int = 0):
 
 @login_required(login_url='accounts/login/')
 def device_delete(request, id):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
-    check_superuser(request)
     try:
         group = Equipment.objects.get(id=id)
         group.delete()

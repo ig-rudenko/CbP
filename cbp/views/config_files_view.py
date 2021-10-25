@@ -2,8 +2,8 @@ from django.shortcuts import render
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponsePermanentRedirect, HttpResponseRedirect
-from cbp.models import BackupGroup, FtpGroup
-from cbp.views.user_checks import check_user_permission, check_superuser
+from cbp.models import BackupGroup, FtpGroup, Equipment
+from cbp.views.user_checks import check_user_permission
 
 from cbp.core.logs import critical_log
 from cbp.core.ftp_login import ftp_login
@@ -32,7 +32,7 @@ def home(request):
                 'home.html',
                 {
                     "form": {},
-                    'superuser': check_superuser(request)
+                    'superuser': request.user.is_superuser
                 }
             )
 
@@ -89,7 +89,7 @@ def home(request):
             'home.html',
             {
                 "form": ftp_dirs,
-                'superuser': check_superuser(request)
+                'superuser': request.user.is_superuser
             }
         )
 
@@ -173,6 +173,7 @@ def list_config_files(request):
         check_user_permission(request)
         backup_group = request.GET.get('bg')
         device_name = request.GET.get('dn')
+        device = Equipment.objects.get(device_name=device_name)
         config_files = []
         # Находим FTP сервер, который относится к переданной backup group
         ftp_server = FtpGroup.objects.get(name=request.GET.get('fs'))
@@ -200,7 +201,8 @@ def list_config_files(request):
                               "backup_group": backup_group,
                               "device_name": device_name,
                               "ftp_server": request.GET.get('fs'),
-                              "superuser": check_superuser(request)
+                              "superuser": request.user.is_superuser,
+                              "device": device,
                           }
                       )
 
@@ -266,7 +268,7 @@ def show_config_file(request):
                           "device_name": device_name,
                           "backup_group": backup_group,
                           "ftp_server": request.GET.get('fs'),
-                          "superuser": check_superuser(request)
+                          "superuser": request.user.is_superuser
                       }
                   )
 
@@ -274,7 +276,7 @@ def show_config_file(request):
 @login_required(login_url='accounts/login/')
 def delete_file(request):
     print(request.GET)
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
     if request.method == 'GET':
         backup_group = request.GET.get('bg')

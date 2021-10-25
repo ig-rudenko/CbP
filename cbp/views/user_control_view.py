@@ -3,12 +3,11 @@ from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponsePermanentRedirect
 from cbp.models import BackupGroup
-from cbp.views.user_checks import check_superuser
 
 
 @login_required(login_url='accounts/login/')
 def users(request):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     u = User.objects.all()
@@ -17,7 +16,7 @@ def users(request):
 
 @login_required(login_url='accounts/login/')
 def user_access_edit(request, username):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     if request.method == 'GET':

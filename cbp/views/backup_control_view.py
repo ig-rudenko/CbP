@@ -12,19 +12,9 @@ import sys
 import os
 
 
-def check_superuser(request):
-    try:
-        if not User.objects.get(username=str(request.user)).is_superuser:
-            return 0
-        else:
-            return 1
-    except Exception:
-        return 0
-
-
 @login_required(login_url='accounts/login/')
 def show_logs(request):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
     return render(request, 'backup_control/logs.html')
 
@@ -32,7 +22,7 @@ def show_logs(request):
 @login_required(login_url='accounts/login/')
 def get_logs(request):
     print(request.GET)
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return JsonResponse({
             'data': []
         })
@@ -74,6 +64,8 @@ def get_logs(request):
 
 @login_required(login_url='accounts/login/')
 def tasks(request):
+    if not request.user.is_superuser:
+        return HttpResponsePermanentRedirect('/')
     backup_groups = [bg.backup_group for bg in BackupGroup.objects.all()]
 
     if request.method == 'POST':

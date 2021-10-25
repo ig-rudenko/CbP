@@ -10,13 +10,3 @@ def check_user_permission(request):
     if (not available_backup_groups or str(request.GET.get('bg')) not in available_backup_groups) \
             and not current_user.is_superuser:
         return HttpResponsePermanentRedirect('/')
-
-
-def check_superuser(request):
-    try:
-        if not User.objects.get(username=str(request.user)).is_superuser:
-            return 0
-        else:
-            return 1
-    except Exception:
-        return 0

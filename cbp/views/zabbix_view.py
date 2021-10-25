@@ -1,5 +1,4 @@
 from django.shortcuts import render
-from django.contrib.auth.models import User
 from django.http import HttpResponsePermanentRedirect
 from django.contrib.auth.decorators import login_required
 from pyzabbix import ZabbixAPI
@@ -7,16 +6,6 @@ import configparser
 from cbp.core import logs
 from cbp.models import AuthGroup, BackupGroup, Equipment
 import sys
-
-
-def check_superuser(request):
-    try:
-        if not User.objects.get(username=str(request.user)).is_superuser:
-            return 0
-        else:
-            return 1
-    except Exception:
-        return 0
 
 
 def get_zabbix_config():
@@ -34,7 +23,7 @@ def get_zabbix_config():
 
 @login_required(login_url='accounts/login/')
 def get_groups(request):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     zbx_auth = get_zabbix_config()
@@ -74,7 +63,7 @@ def get_groups(request):
                     'zabbix/zabbix_hosts.html',
                     {
                         'hosts': hosts,
-                        'superuser': check_superuser(request),
+                        'superuser': request.user.is_superuser,
                         'group_name': request.GET.get('gn')
                     }
                 )
@@ -110,7 +99,7 @@ def get_groups(request):
             "zabbix/zabbix_groups.html",
             {
                 'groups': groups,
-                'superuser': check_superuser(request)
+                'superuser': request.user.is_superuser
             }
         )
 
@@ -121,6 +110,6 @@ def get_groups(request):
             "zabbix/zabbix_groups.html",
             {
                 'groups': [],
-                'superuser': check_superuser(request)
+                'superuser': request.user.is_superuser
             }
         )

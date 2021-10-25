@@ -3,12 +3,11 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseNotFound, HttpResponsePermanentRedirect
 from cbp.forms import AuthGroupsForm
 from cbp.models import AuthGroup
-from cbp.views.user_checks import check_superuser
 
 
 @login_required(login_url='accounts/login/')
 def auth_groups(request):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     groups = AuthGroup.objects.all()
@@ -17,7 +16,7 @@ def auth_groups(request):
 
 @login_required(login_url='accounts/login/')
 def auth_group_edit(request, id: int = 0):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     try:
@@ -48,7 +47,7 @@ def auth_group_edit(request, id: int = 0):
 
 @login_required(login_url='accounts/login/')
 def auth_group_delete(request, id):
-    if not check_superuser(request):
+    if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
 
     try:
