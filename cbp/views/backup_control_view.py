@@ -37,12 +37,8 @@ def get_logs(request):
             date_ = 'Позавчера'
         return f'{date_} {d[11:]}'
 
-    conf = ConfigParser()
-    conf.read(f'{sys.path[0]}/cbp.conf')  # Файл конфигурации
-    logs_dir = conf.get('Path', 'logs_dir').replace('~', sys.path[0])  # Папка сохранения логов
-
-    if os.path.exists(os.path.join(logs_dir, f"{request.GET.get('type')}.log")):
-        with open(os.path.join(logs_dir, f"{request.GET.get('type')}.log")) as file:
+    if os.path.exists(f"/logs/{request.GET.get('type')}.log"):
+        with open(f"/logs/{request.GET.get('type')}.log") as file:
             log_file = file.readlines()
     else:
         return JsonResponse({
@@ -87,10 +83,12 @@ def tasks(request):
 
         return HttpResponsePermanentRedirect('/backup_control/tasks')
 
-
     print(request.GET)
-    with open('/var/spool/cron/crontabs/root') as cron_file:
-        crontab_list = [str(l) for l in cron_file.readlines() if not l.startswith('#')]
+    if os.path.exists('/var/spool/cron/crontabs/root'):
+        with open('/var/spool/cron/crontabs/root') as cron_file:
+            crontab_list = [str(l) for l in cron_file.readlines() if not l.startswith('#')]
+    else:
+        crontab_list = []
 
     if not crontab_list:
         # Пустая таблица crontab

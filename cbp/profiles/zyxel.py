@@ -2,7 +2,6 @@ from datetime import datetime
 import os
 import ftplib
 from cbp.core import logs
-from configparser import ConfigParser
 import sys
 
 debug_level = 0
@@ -12,13 +11,6 @@ debug_level = 0
         1 - производит умеренное количество результатов отладки, обычно одна строка на запрос. 
         2 - каждая строка, отправленная и полученная по управляющему соединению.
 '''
-
-conf = ConfigParser()
-conf.read(f'{sys.path[0]}/cbp.conf')
-backup_server_ip = conf.get('Main', 'backup_server_ip')     # IP адрес сервера бэкапов
-backup_dir = conf.get('Path', 'backup_dir').replace('~', sys.path[0])                 # Полный путь к папке  бэкапов
-if not os.path.exists(backup_dir):
-    os.makedirs(backup_dir)
 
 
 def elog(info, ip, name):

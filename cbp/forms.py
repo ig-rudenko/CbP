@@ -24,6 +24,11 @@ class FtpServersForm(forms.Form):
     login = forms.CharField(max_length=50, label='Имя пользователя')
     password = forms.CharField(max_length=50, label='Пароль пользователя')
     workdir = forms.CharField(max_length=255, label='Рабочая директория')
+    protocol = forms.ChoiceField(
+        choices=[('FTP', 'FTP'), ('SFTP', 'SFTP')],
+        label='Тип протокола для подключения'
+    )
+    sftp_port = forms.IntegerField(min_value=1, max_value=65535, label='Порт для подключения (только для SFTP)')
 
 
 class AuthGroupsForm(forms.Form):

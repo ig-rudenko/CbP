@@ -25,15 +25,23 @@
 
         <input name="bg_id" value="{{ backup_group.id }}" style="display: none">
 
-        <h4>Выберите, на какие FTP сервера будут клонироваться файлы конфигурации из данной группы</h4>
+        <h4>Выберите, на какие удаленные сервера будут клонироваться файлы конфигурации из данной группы</h4>
 
         <table>
-        <tr><th>FTP сервер</th><th>IP</th><th>Расположение</th></tr>
+        <tr><th>Удаленный сервер</th><th>IP</th><th>Расположение</th></tr>
             {% for fs in ftp_servers %}
                 <tr>
+                    {# REMOTE SERVER NAME #}
                     <td><a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">{{ fs.name }}</a></td>
+
+                    {# REMOTE SERVER IP #}
                     <td><a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">{{ fs.ip }}</a></td>
-                    <td><a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">ftp://{{ fs.wd }}{{ backup_group.name }}</a></td>
+
+                    {# REMOTE SERVER РАСПОЛОЖЕНИЕ #}
+                    <td><a class="no_decoration" href="/ftp_servers/edit/{{ fs.id }}">
+                        {% if fs.protocol == 'SFTP' %}s{% endif %}ftp://{{ fs.wd }}{{ backup_group.name }}</a></td>
+
+                    {# REMOTE SERVER CHECK #}
                     <td style="max-width: 1px">
                         <label class="container" for="{{ fs.name }}_{{ fs.ip }}">
                         <input type="checkbox" name="{{ fs.name }}_{{ fs.ip }}" id="{{ fs.name }}_{{ fs.ip }}"

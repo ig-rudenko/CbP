@@ -76,7 +76,7 @@
             <td>{{ d.ip }}</td>
             <td>{{ d.device_name }}</td>
             <td>{{ d.vendor }}</td>
-            <td>{{ d.protocol }}</td>
+            <td>{{ d.protocol }}{% if d.protocol == 'ssh' %}🔒{% endif %}</td>
             <td>{{ d.auth_group_id }}</td>
             <td>{{ d.backup_group_id }}</td>
             <td><a class="no_decoration font20" href="device/edit/{{ d.id }}">✎</a> |

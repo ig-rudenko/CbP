@@ -37,9 +37,11 @@ def ftp_servers_edit(request, fs_id: int = 0):
                 'login': ftp_server.login,
                 'password': ftp_server.password,
                 'workdir': ftp_server.workdir,
+                'protocol': ftp_server.protocol,
+                'sftp_port': ftp_server.sftp_port
             })
         else:
-            ftp_server_form = FtpServersForm()
+            ftp_server_form = FtpServersForm(initial={'sftp_port': 22})
             ftp_server = FtpGroup()
 
         if request.method == "POST":
@@ -48,6 +50,8 @@ def ftp_servers_edit(request, fs_id: int = 0):
             ftp_server.login = request.POST.get('login')
             ftp_server.password = request.POST.get('password')
             ftp_server.workdir = request.POST.get('workdir')
+            ftp_server.protocol = request.POST.get('protocol')
+            ftp_server.sftp_port = request.POST.get('sftp_port') or 22
             ftp_server.save()
 
             return HttpResponsePermanentRedirect("/ftp_servers")

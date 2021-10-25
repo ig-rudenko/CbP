@@ -9,7 +9,7 @@
         /
         <a class="no_decoration" href="/" style="color: #2196F3;">{{ backup_group }}</a>
         :
-        {{ device_name }}{% if superuser %}
+        {{ device_name }}{% if superuser and device %}
             <a class="no_decoration font20" href="device/edit/{{ device.id }}">✎</a>
         {% endif %}
     </h2>

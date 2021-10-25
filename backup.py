@@ -6,6 +6,9 @@ import subprocess
 from datetime import datetime
 import sys
 import ftplib
+
+import pexpect
+
 from cbp.core import logs
 from configparser import ConfigParser
 from cbp.core.database import DataBase
@@ -51,6 +54,14 @@ def ftp_mkdir(ftp: ftplib.FTP, folder: str):
         ftp.mkd(folder)
     except ftplib.error_perm:
         pass
+
+
+# def sftp_send(ftp_server: dict, local_file_path: str, bg: str, dn: str):
+#     try:
+#         with pexpect.spawn(f'sftp -P ')
+#     except Exception as e:
+#         logs.critical_log.critical(f"FTP: {ftp_server['name']} ({ftp_server['ip']}) {e}")
+#         return e
 
 
 def ftp_send(ftp_server: dict, local_file_path: str, bg: str, dn: str):
@@ -128,7 +139,7 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
             print('Смотрим, на какие ftp сервера необходимо отправить конфигурацию')
             for ftp_server in ftp_servers:
                 print(ftp_server)
-                if ftp_server['ip'] == LOCAL_HOST_BACKUP_IP and local_file_path:
+                if ftp_server['ip'] in MASTER_HOST_IPS and local_file_path:
                     print('Если файл конфигурации необходимо загрузить на master host и он уже был загружен ранее')
                     # Если файл конфигурации необходимо загрузить на master host и он уже был загружен ранее,
                     continue  # то пропускаем
@@ -211,7 +222,9 @@ def backup_start(available_backup_group: str = ''):
                     'login': line[2],
                     'password': line[3],
                     'workdir': line[4],
-                    'name': line[5]
+                    'name': line[5],
+                    'protocol': line[6],
+                    'ssh_port': line[7]
                 }
                 for line in db.get_table('cbp_ftpgroup') if line[0] in ftp_ids
             ]

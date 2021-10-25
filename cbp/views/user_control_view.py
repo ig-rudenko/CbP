@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from django.contrib.auth import authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponsePermanentRedirect
@@ -9,7 +10,7 @@ from cbp.models import BackupGroup
 def users(request):
     if not request.user.is_superuser:
         return HttpResponsePermanentRedirect('/')
-
+    authenticate()
     u = User.objects.all()
     return render(request, "user_control/users.html", {"users": u})
 

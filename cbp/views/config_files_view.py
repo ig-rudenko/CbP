@@ -173,11 +173,25 @@ def list_config_files(request):
         check_user_permission(request)
         backup_group = request.GET.get('bg')
         device_name = request.GET.get('dn')
-        device = Equipment.objects.get(device_name=device_name)
         config_files = []
         # Находим FTP сервер, который относится к переданной backup group
         ftp_server = FtpGroup.objects.get(name=request.GET.get('fs'))
 
+        # Определяем принадлежность оборудования
+        device = {}
+        # Определяем BackupGroup по имени её группы и имени Удаленного сервера
+        bg = FtpGroup.objects.get(name=ftp_server.name).backupgroup_set.filter(backup_group=backup_group)
+
+        if bg:  # Если существует данная группа у сервера, то определяем устройство
+
+            device = Equipment.objects.filter(
+                device_name=device_name,  # Фильтруем по имени
+                backup_group=bg.get().id  # Фильтруем по BackupGroup_id
+            )
+            if device:
+                device = device.get()  # Если нашли устройство, то берем его из запроса
+
+        # Подключаемся к Удаленному серверу
         ftp = ftp_login(ftp_server)
 
         config_files_list = []

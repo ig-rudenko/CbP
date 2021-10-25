@@ -4,14 +4,14 @@
     <ul class="menu-main">
         <li><a href="/" >Home</a></li>
         <li><a href="/backup_control/tasks" >Tasks</a></li>
-        <li><a class="current" href="/ftp_servers" >FTP servers</a></li>
+        <li><a class="current" href="/ftp_servers" >Remote servers</a></li>
         <li><a href="/backup_control/logs">Logs</a></li>
         <li><a href="/accounts/logout">Logout</a></li>
     </ul>
 {% endblock %}
 
 {% block header %}
-    FTP Servers
+    Remote Servers
     <a class="atuin-btn2" href="ftp_servers/edit">Добавить</a>
 {% endblock header %}
 {% block content %}
@@ -21,14 +21,15 @@
     {% if ftp_servers.count > 0 %}
     <table style="text-align: center">
         <tr>
-            <th>Сервер</th><th>Адрес</th><th>Пользователь</th><th>Рабочая папка</th>
+            <th>Сервер</th><th>Адрес</th><th>Пользователь</th><th>Рабочая папка</th><th>Протокол</th>
         </tr>
         {% for fs in ftp_servers %}
         <tr>
             <td>{{ fs.name }}</td>
             <td>{{ fs.host }}</td>
             <td>{{ fs.login }}</td>
-            <td>ftp://{{ fs.workdir }}</td>
+            <td>{% if fs.protocol == 'SFTP' %}s{% endif %}ftp://{{ fs.workdir }}</td>
+            <td style="color: chocolate">{{ fs.protocol }}{% if fs.protocol == 'SFTP' %}🔒{% endif %}</td>
             <td><a class="no_decoration font20" href="ftp_servers/edit/{{ fs.id }}">✎</a> |
                 <a class="no_decoration" style="cursor: pointer" onclick="delete_group('{{ fs.id }}', '{{ fs.host }}', '{{ fs.name }}')">❌</a></td>
         </tr>

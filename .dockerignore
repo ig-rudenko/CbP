@@ -8,3 +8,4 @@
 !manage.py
 !requirements.txt
 !run.sh
+cbp/migrations/

@@ -55,7 +55,8 @@ def backup_group_edit(request, bg_id: int = 0):
                     'ip': fs.host,
                     'name': fs.name,
                     'id': fs.id,
-                    'wd': workdir
+                    'wd': workdir,
+                    'protocol': fs.protocol
                 })
             return render(
                 request,
