@@ -13,6 +13,7 @@ from cbp.core import logs
 from configparser import ConfigParser
 from cbp.core.database import DataBase
 from cbp.core.dc import DeviceConnect
+from cbp.core.ftp_login import Remote
 
 from pprint import pprint
 
@@ -66,26 +67,24 @@ def ftp_mkdir(ftp: ftplib.FTP, folder: str):
 
 def ftp_send(ftp_server: dict, local_file_path: str, bg: str, dn: str):
     try:
-        with ftplib.FTP(ftp_server['ip'], ftp_server['login'], ftp_server['password']) as ftp:
-            ftp.cwd(ftp_server['workdir'])
-            # Создаем папки
-            ftp_mkdir(ftp, bg)
-            ftp_mkdir(ftp, f'{bg}/{dn}')
-            file_name = os.path.split(local_file_path)[1]
+        ftp = Remote(ftp_server).connect()
+        # Создаем папки
+        ftp.mkdir(bg)
+        ftp.mkdir(f'{bg}/{dn}')
+        file_name = os.path.split(local_file_path)[1]
 
-            # Загружаем локальный файл на ftp сервер
-            with open(local_file_path, 'rb') as file:
-                s = ftp.storbinary(f'STOR {bg}/{dn}/{file_name}', file, 1024)  # Записываем в файл
-            return s
+        # Загружаем локальный файл на ftp сервер
+        return ftp.upload(file_path=local_file_path, remote_file_path=f'{bg}/{dn}/{file_name}')
+
     except Exception as e:
-        logs.critical_log.critical(f"FTP: {ftp_server['name']} ({ftp_server['ip']}) {e}")
+        logs.critical_log.critical(f"Remote: {ftp_server['name']} ({ftp_server['ip']}) {e}")
         return e
 
 
 def get_backup_device(ip, device_name, vendor, protocol, login, password, privilege_mode_password,
-                      backup_group, ftp_servers: dict) -> int:
-    if not ip:
-        return 1
+                      backup_group, ftp_servers: dict):
+
+    # Доступно ли оборудование
     dev_ip_check = subprocess.run(['ping', '-c', '3', '-n', ip], stdout=subprocess.DEVNULL)
     # Проверка на доступность: 0 - доступен, 1 и 2 - недоступен
     if dev_ip_check.returncode == 0:
@@ -93,9 +92,9 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
         session.connect(login, password, privilege_mode_password, protocol=protocol)
         pprint(session.device)
         session.get_saved_configuration()
-        print(session.configuration_str)
+        # print(session.configuration_str)
         if session.config_diff():  # Если конфигурация отличается, то необходимо сделать бэкап
-            print('конфигурация отличается')
+            print('Конфигурация отличается')
             if LOCAL_FTP_USER_NAME and LOCAL_FTP_USER_PASS and LOCAL_FTP_USER_HOME and \
                     LOCAL_HOST_BACKUP_IP and not LOCAL_FTP_SERVER_STATUS:
                 # Если запущен cbp_ftpd_server и указан ip адрес master host, а также имеются данные для подключения
@@ -119,7 +118,8 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
                         ftp_mkdir(ftp, f'{backup_group}/{device_name}')
 
                 # Делаем бэкап
-                local_file_path = '/home/ftpuser' + session.backup_configuration(
+                print('Backup start')
+                backup_file = session.backup_configuration(
                     backup_group=backup_group,
                     backup_server={
                         'ip': LOCAL_HOST_BACKUP_IP,
@@ -128,8 +128,12 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
                         'workdir': '/'
                     }
                 )
+                if backup_file:
+                    local_file_path = '/home/ftpuser' + backup_file
+                else:
+                    local_file_path = ''
 
-                print('local_file_path: ', local_file_path)
+                print('local_file_path: ', local_file_path or 'None')
 
             else:  # Если не запущен cbp_ftpd_server или не указан ip адрес master host,
                 # либо отсутствуют данные для подключения к cbp_ftpd_server
@@ -140,7 +144,7 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
             for ftp_server in ftp_servers:
                 print(ftp_server)
                 if ftp_server['ip'] in MASTER_HOST_IPS and local_file_path:
-                    print('Если файл конфигурации необходимо загрузить на master host и он уже был загружен ранее')
+                    print('Файл конфигурации необходимо загрузить на master host и он уже был загружен ранее')
                     # Если файл конфигурации необходимо загрузить на master host и он уже был загружен ранее,
                     continue  # то пропускаем
 
@@ -150,8 +154,9 @@ def get_backup_device(ip, device_name, vendor, protocol, login, password, privil
                     ftp_send(ftp_server, local_file_path, backup_group, device_name)
 
                 # Если файл конфигурации НЕ имеется на master host, то отправляем его на другой ftp
-                elif not local_file_path:
-                    print('Если файл конфигурации НЕ имеется на master host, то отправляем его на другой ftp')
+                # И протокол FTP
+                elif not local_file_path and ftp_server["protocol"] == "FTP":
+                    print('Файл конфигурации НЕ имеется на master host, отправляем его на другой FTP')
                     # Создаем на FTP сервере необходимые папки
                     with ftplib.FTP(ftp_server['ip'], ftp_server['login'], ftp_server['password']) as ftp:
                         ftp.cwd(ftp_server['workdir'])  # Преходим в рабочую директорию
@@ -185,7 +190,7 @@ def backup_start(available_backup_group: str = ''):
 
     if not devices_list:
         logs.critical_log.critical(f'База оборудования пуста!')
-    with ThreadPoolExecutor(max_workers=1) as executor:  # Управление потоками
+    with ThreadPoolExecutor() as executor:  # Управление потоками
         for device in devices_list:
             ip = device[1]
             device_name = device[2]
@@ -224,7 +229,7 @@ def backup_start(available_backup_group: str = ''):
                     'workdir': line[4],
                     'name': line[5],
                     'protocol': line[6],
-                    'ssh_port': line[7]
+                    'sftp_port': line[7]
                 }
                 for line in db.get_table('cbp_ftpgroup') if line[0] in ftp_ids
             ]

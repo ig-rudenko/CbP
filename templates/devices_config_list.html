@@ -49,21 +49,26 @@
         {% for line in form %}
             <tr>
                 <td>
-                    {% if line.3 %}  {# Если файл, то создаем ссылку #}
-                        <a class="no_decoration" href="/show?fs={{ ftp_server }}&bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.0 }}">
-                        {{ line.0 }}</a>
+                    {% if line.0 == 'f' %}  {# Если файл, то создаем ссылку #}
+                        <a class="no_decoration" href="/show?fs={{ ftp_server }}&bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.3 }}">
+                        {{ line.3 }}</a>
                     {% else %}
-                        {{ line.0 }}
+                        {{ line.3 }}  {# Имя #}
                     {% endif %}
                 </td>
                 <td>
-                    {{ line.1 }}  {# Дата #}
+                    {{ line.2 }}  {# Дата #}
                 </td>
                 <td>
-                    {{ line.2 }}  {# Размер #}
+                        {{ line.0 }}
+                    {% if line.0 == 'f' %}
+                        {{ line.1 }}  {# Если файл - показываем размер #}
+                    {% else %}
+                        папка  {# Иначе - просто папка #}
+                    {% endif %}
                 </td>
                 <td>  {# Скачать файл #}
-                    <a class="no_decoration" href="/download?bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.0 }}&fs={{ ftp_server }}"
+                    <a class="no_decoration" href="/download?bg={{ backup_group }}&dn={{ device_name }}&fn={{ line.3 }}&fs={{ ftp_server }}"
                         style="font-size: 26px;">
                             ⇩
                     </a>
@@ -72,7 +77,7 @@
                 {% if superuser %}
                    {# Кнопка удаления файла #}
                     <td>
-                        <a style="cursor: pointer" onclick="delete_file('{{ line.0 }}')">❌</a>
+                        <a style="cursor: pointer" onclick="delete_file('{{ line.3 }}')">❌</a>
                     </td>
                 {% endif %}
 

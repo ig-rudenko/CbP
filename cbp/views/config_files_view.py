@@ -5,8 +5,8 @@ from django.http import HttpResponse, HttpResponsePermanentRedirect, HttpRespons
 from cbp.models import BackupGroup, FtpGroup, Equipment
 from cbp.views.user_checks import check_user_permission
 
+from cbp.core.ftp_login import Remote
 from cbp.core.logs import critical_log
-from cbp.core.ftp_login import ftp_login
 from cbp.core.download_ftp_tree import download_ftp_tree
 from dateconverter import DateConverter
 from re import findall
@@ -42,18 +42,19 @@ def home(request):
         for ftp_server in all_ftp_servers:
             # Подключаемся к каждому серверу
             try:
-                ftp = ftp_login(ftp_server)  # Подключаемся к FTP серверу
-                if not ftp:
+                ftp = Remote(ftp_server).connect()  # Подключаемся к FTP серверу
+                if not ftp.alive():
                     continue  # Пропускаем сервер, к которому не удалось подключиться
+
                 wd = ftp_server.workdir  # Рабочая директория FTP сервера
-                dir_list = []  # Список из папок и файлов в рабочей директории FTP сервера
-                ftp.retrlines(f'LIST {wd}', dir_list.append)  # Заполняем данными
+                dir_list = ftp.dir(wd)  # Список из папок и файлов в рабочей директории FTP сервера
+
                 ftp_dirs[ftp_server.name] = {}  # Создаем словарь для FTP сервера
                 # Backup группы
 
                 for group in dir_list:  # Для каждого найденного файла в рабочей директории
                     # Определяем имя группы
-                    gr = findall(r'^\S+\s+\S+\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', group)[0]
+                    gr = group[3]
 
                     try:
                         # Определяем ID backup_group по имени группы у текущего сервера
@@ -62,24 +63,19 @@ def home(request):
                         # Если имя не найдено в базе
                         bg_id = 'none'
 
-                    if group.startswith('d') and \
-                            (bg_id in available_backup_groups_ids
-                             or current_user.is_superuser):
+                    if group[0] == 'd' and (bg_id in available_backup_groups_ids or current_user.is_superuser):
                         # Сохраняем только папки и разрешенные для пользователя,
                         # Если суперпользователь, то все
                         ftp_dirs[ftp_server.name][gr] = {}
 
                 # Проходимся по всем разрешенным группам
                 for group in ftp_dirs[ftp_server.name]:
-                    group_list = []  # Содержимое группы
-                    ftp.retrlines(f'LIST {wd}/{group}', group_list.append)
+                    group_list = ftp.dir(f'{wd}/{group}')  # Содержимое группы
 
                     # Создаем упорядоченный список папок для группы
-                    group_list = sorted([findall(r'^\S+\s+\d+\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', g)[0]
-                                         for g in group_list if g.startswith('d')])
+                    group_list = sorted([g[3] for g in group_list if g[0] == 'd'])
                     for devs in group_list:  # Для каждого устройства в группе
                         ftp_dirs[ftp_server.name][group][devs] = []
-                ftp.quit()
 
             except Exception as ftp_error:
                 critical_log.critical(ftp_error)
@@ -105,7 +101,7 @@ def download_file_(request):
     try:
         # Находим FTP сервер, который относится к переданной backup group
         ftp_server = FtpGroup.objects.get(name=fs)
-        ftp = ftp_login(ftp_server)
+        ftp = Remote(ftp_server).connect()
 
         # Проверяем папку для обмена файлами между ftp сервером и пользователем "./temp"
         if not os.path.exists(os.path.join(sys.path[0], 'temp')):
@@ -113,15 +109,14 @@ def download_file_(request):
 
         temp_file_name = str(hash(f"{request.user}_{bg}_{dn}_{fn}"))
 
-        # Проверяем, является ли объект файлом или папкой
-        ftp_file = []
-        ftp.retrlines(f"LIST {bg}/{dn}/{fn}", ftp_file.append)
-
+        ftp_file = ftp.dir(f'{bg}/{dn}/{fn}')
         loc_file = os.path.join(sys.path[0], 'temp', temp_file_name)  # Полный путь к локальному файлу
-        if ftp_file[0].startswith('d'):
+
+        # Проверяем, является ли объект файлом или папкой
+        if ftp_file[0] == 'd':
             # Если папка
             # Скачиваем всё её содержимое рекурсивно в папку "./temp"
-            download_ftp_tree(ftp, f"{bg}/{dn}/{fn}", 'temp')
+            ftp.download_folder(f"{bg}/{dn}/{fn}", 'temp')
             # Помещаем содержимое папки в архив
             shutil.make_archive(
                 loc_file,   # файл архива
@@ -133,19 +128,16 @@ def download_file_(request):
             shutil.rmtree(os.path.join(sys.path[0], 'temp', bg), ignore_errors=True)  # Удаляем папку
         else:
             # Если файл
-            # Создаем и открываем файл для записи
+            # Скачиваем файл
             file_name = f'{dn}_{fn}'
-            with open(loc_file, 'wb') as temp_file:
-                # Записываем удаленный файл в локальный
-                ftp.retrbinary(f"RETR {bg}/{dn}/{fn}", temp_file.write)
-            ftp.quit()
+            ftp.download(remote_file_path=f'{bg}/{dn}/{fn}', to_local_file_path=loc_file)
 
         # Отправляем пользователю файл
         if os.path.exists(loc_file):
             with open(loc_file, 'rb') as fh:
                 response = HttpResponse(fh.read(), content_type="application/vnd.ms-excel")
             response['Content-Disposition'] = f'inline; filename={file_name}'
-            os.remove(loc_file)
+            os.remove(loc_file)  # Удаляем локальный файл
             return response
 
     except Exception as error:
@@ -157,23 +149,12 @@ def download_file_(request):
 @login_required(login_url='accounts/login/')
 def list_config_files(request):
 
-    def format_time(string: str):
-        f = string.split()
-        return DateConverter(f[1] + f[0] + f[2] if ':' not in f[2] else f[1] + f[0])
-
-    def sizeof_fmt(num: int, suffix='Б'):
-        for unit in ['', 'К', 'М', 'Г', 'Т']:
-            if abs(num) < 1024.0:
-                return "%3.1f %s%s" % (num, unit, suffix)
-            num /= 1024.0
-        return "%.1f %s%s" % (num, 'Yi', suffix)
-
     if request.method == 'GET':
         # Проверяем, имеет ли пользователь полномочия просматривать конфигурации в данной группе
         check_user_permission(request)
         backup_group = request.GET.get('bg')
         device_name = request.GET.get('dn')
-        config_files = []
+
         # Находим FTP сервер, который относится к переданной backup group
         ftp_server = FtpGroup.objects.get(name=request.GET.get('fs'))
 
@@ -192,22 +173,11 @@ def list_config_files(request):
                 device = device.get()  # Если нашли устройство, то берем его из запроса
 
         # Подключаемся к Удаленному серверу
-        ftp = ftp_login(ftp_server)
 
-        config_files_list = []
-        # Передаем все файлы конфигураций в массив
-        ftp.retrlines(f'LIST {ftp_server.workdir}/{backup_group}/{device_name}', config_files_list.append)
-        ftp.quit()
+        ftp = Remote(ftp_server).connect()
+        print(type(ftp))
 
-        for file in config_files_list:
-            is_file = False if file.startswith('d') else True
-            file_name = findall(r'^\S+\s+\d+\s+\S+\s+\S+\s+\d+\s+\S+\s+\d+\s+\S+\s+(.+)$', file)[0]
-            file_create = format_time(findall(r'^\S+\s+\d+\s+\S+\s+\S+\s+\d+\s+(\S+\s+\d+\s+\S+)\s+.+$', file)[0])
-            file_size = sizeof_fmt(int(findall(r'^\S+\s+\d+\s+\S+\s+\S+\s+(\d+)\s+\S+\s+\d+\s+\S+\s+.+$', file)[0])) if is_file else 'папка'
-            config_files.append([file_name, file_create, file_size, is_file])
-        # Сортируем файлы по дате создания
-        config_files = sorted(config_files, key=lambda x: x[1].date.toordinal())
-        config_files.reverse()  # По убыванию
+        config_files = ftp.dir(f'{ftp_server.workdir}/{backup_group}/{device_name}')
 
         return render(request, 'devices_config_list.html',
                       {
@@ -224,7 +194,6 @@ def list_config_files(request):
     elif request.method == 'POST' and request.FILES.get('file'):
         # Находим FTP сервер, который относится к переданной backup group
         ftp_server = FtpGroup.objects.get(name=request.GET.get('fs'))
-        ftp = ftp_login(ftp_server)
         backup_group = request.POST.get('bg')
         device_name = request.POST.get('dn')
         # Проверяем папку для обмена файлами между ftp сервером и пользователем
@@ -236,11 +205,15 @@ def list_config_files(request):
             for chunk_ in request.FILES['file'].chunks():
                 new_file.write(chunk_)
 
-        with open(os.path.join(sys.path[0], 'temp', temp_file_name), 'rb') as ftp_file:
-            ftp.storbinary('STOR ' + f"{ftp_server.workdir}/{backup_group}/{device_name}/"
-                                     f"{str(request.FILES['file'].name).replace(' ', '_')}",
-                           ftp_file, 1024)
-        ftp.quit()  # Отключаемся от ftp сервера
+        # Подключаемся к удаленному серверу
+        ftp = Remote(ftp_server).connect()
+        # Отправляем файл
+        ftp.upload(
+            file_path=os.path.join(sys.path[0], 'temp', temp_file_name),
+            remote_file_path=f"{ftp_server.workdir}/{backup_group}/{device_name}/"
+                             f"{str(request.FILES['file'].name).replace(' ', '_')}"
+        )
+
         os.remove(os.path.join(sys.path[0], 'temp', temp_file_name))  # Удаляем временный файл
         return HttpResponsePermanentRedirect(f'/config?fs={request.GET.get("fs")}&bg={backup_group}&dn={device_name}')
     return HttpResponsePermanentRedirect('/')
@@ -256,23 +229,25 @@ def show_config_file(request):
     device_name = request.GET.get('dn')
     config_file_name = request.GET.get('fn')
     ftp_server = FtpGroup.objects.get(name=request.GET.get('fs'))
-    ftp = ftp_login(ftp_server)
+
     try:
         # Проверяем папку для обмена файлами между ftp сервером и пользователем
         if not os.path.exists(os.path.join(sys.path[0], 'temp')):
             os.mkdir(os.path.join(sys.path[0], 'temp'))  # Создаем, если нет
 
-        temp_file_name = str(
-            hash(f"{request.user}_{backup_group}_{device_name}_{config_file_name}"))
-        # Создаем и открываем файл для записи
-        with open(os.path.join(sys.path[0], 'temp', temp_file_name), 'wb') as temp_file:
-            # Записываем удаленный файл в локальный
-            ftp.retrbinary(f"RETR {ftp_server.workdir}/{backup_group}/{device_name}/{config_file_name}",
-                           temp_file.write)
-        ftp.quit()
+        temp_file_name = str(hash(f"{request.user}_{backup_group}_{device_name}_{config_file_name}"))
+
+        # Подключаемся к удаленному серверу
+        ftp = Remote(ftp_server).connect()
+        # Скачиваем файл
+        ftp.download(
+            remote_file_path=f"{ftp_server.workdir}/{backup_group}/{device_name}/{config_file_name}",
+            to_local_file_path=os.path.join(sys.path[0], 'temp', temp_file_name)
+        )
+
         with open(os.path.join(sys.path[0], 'temp', temp_file_name)) as temp_file:
-            file_output = temp_file.read()
-        os.remove(os.path.join(sys.path[0], 'temp', temp_file_name))
+            file_output = temp_file.read()  # Считываем временный файл
+        os.remove(os.path.join(sys.path[0], 'temp', temp_file_name))  # Удаляем временный файл
 
     except UnicodeDecodeError:
         file_output = 'Невозможно прочитать данный файл в виде текста'
@@ -298,9 +273,10 @@ def delete_file(request):
         file_name = request.GET.get('fn')
         ftp_server = FtpGroup.objects.get(name=request.GET.get('fs'))
 
-        ftp = ftp_login(ftp_server)
-
+        # Подключаемся к удаленному серверу
+        ftp = Remote(ftp_server).connect()
         try:
+            # Удаляем файл
             ftp.delete(f'{ftp_server.workdir}/{backup_group}/{device_name}/{file_name}')
         except Exception as e:
             critical_log.critical(f'delete file {ftp_server.workdir}/{backup_group}/{device_name}/{file_name}: {e}')

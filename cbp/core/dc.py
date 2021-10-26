@@ -2,7 +2,7 @@ import pexpect
 from re import findall
 import sys
 import os
-from cbp.profiles import huawei_msan, zyxel, zte, iskratel_slot, cisco, huawei
+from cbp.profiles import huawei_msan, cisco, huawei
 from cbp.core.database import DataBase
 from cbp.core import logs
 

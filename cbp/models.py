@@ -9,7 +9,7 @@ class FtpGroup(models.Model):
     password = models.CharField(max_length=128, null=True)
     workdir = models.CharField(max_length=254, null=True)
     protocol = models.CharField(max_length=4, null='FTP')
-    sftp_port = models.IntegerField(max_length=5, null=22)
+    sftp_port = models.IntegerField(null=22)
 
 
 class AuthGroup(models.Model):
