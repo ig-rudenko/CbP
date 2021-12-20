@@ -1,40 +1,49 @@
 version: '3.1'
 
 services:
+  # Определяем службы
   cbp:
-    container_name: cbp
-    image: cbp:0.7
-    hostname: cbp_host
-    environment:
-      DJANGO_SUPERUSER_NAME: root
+    # Контейнер с веб-сервером Django
+    # и программой резервного копирования
+    container_name: cbp  # Имя контейнера
+    build: .  # используем образ, созданный из Dockerfile текущего каталога
+    hostname: cbp_host  # Имя хоста
+    environment: # Указываем переменные окружения
+      DJANGO_SUPERUSER_NAME: root  # Логин суперпользователя от веб-сервера
       DJANGO_SUPERUSER_EMAIL: root@example.ru
       DJANGO_SUPERUSER_PASSWORD: password
-      LOCAL_HOST_BACKUP_IP: '10.0.0.47'
-      LOCAL_HOST_IPS: '10.0.0.47, 127.0.0.1'
-      LOCAL_FTP_USER_NAME: ftpuser
+
+      # IP адрес хоста, на котором запущен контейнер ftpd_server
+      LOCAL_HOST_BACKUP_IP: '10.29.4.135'
+      # Определяем все IP адреса машины, на которой запущен контейнер
+      LOCAL_HOST_IPS: '10.29.4.135, 127.0.0.1'
+      LOCAL_FTP_USER_NAME: ftpuser  # Логин от ftpd_server
       LOCAL_FTP_USER_PASS: pass
-      LOCAL_FTP_USER_HOME: /home/ftpuser
-    command: /bin/bash ./run.sh
+      LOCAL_FTP_USER_HOME: /home/ftpuser  # Папка, в которой находятся файлы ftpd_server
+    command: /bin/bash ./run.sh  # Команда запуска
     ports:
-      - "8000:8000"
+      - "8000:8000"  # Открываем порты наружу
     depends_on:
-      - db
+      - db  # Данный контейнер зависит от базы данных
     volumes:
+      # Указываем монтируемые директории
+      - ./run.sh:/home/django/run.sh
       - ./ftp:/home/ftpuser
       - ./cbp:/home/django/cbp
-      - ./backup.py:/home/django/backup.py
-      - ./cbp.conf:/home/django/cbp.conf
       - ./templates:/home/django/templates
       - ./CbP_web:/home/django/CbP_web
+      - ./backup.py:/home/django/backup.py
+      - ./cbp.conf:/home/django/cbp.conf
 
   db:
+    # Контейнер с базой данных
     container_name: cbp-mysql-server
     hostname: cbp_mysql_bd
     image: mysql:8.0
     environment:
       MYSQL_ROOT_PASSWORD: 'cbpsij!*!43'
       MYSQL_DATABASE: 'cbp'
-    restart: always
+    restart: always  # При падении всегда перезапускать
     volumes:
       - ./mysql:/var/lib/mysql
 
@@ -48,7 +57,7 @@ services:
     volumes:
       - "./ftp:/home/ftpuser"
     environment:
-      PUBLICHOST: "10.0.0.47"
+      PUBLICHOST: "10.29.4.135"
       FTP_USER_NAME: ftpuser
       FTP_USER_PASS: pass
       FTP_USER_HOME: /home/ftpuser

@@ -226,17 +226,8 @@ class DeviceConnect:
                 session=self.session,
                 privilege_mode_password=self.__auth_profile['privilege_mode_password']
             )
-
         if 'huawei-msan' in self.device['vendor']:
             self.configuration_str = huawei_msan.get_configuration(session=self.session, device=self.device)
-        if 'zyxel' in self.device['vendor']:
-            self.configuration_str = zyxel.get_configuration(ip=self.device['ip'], device=self.device)
-        if 'zte' in self.device['vendor']:
-            self.configuration_str = zte.get_configuration(session=self.session,
-                                                           privilege_mode_password=self.__auth_profile[
-                                                               'privilege_mode_password'])
-        if 'iskratel' in self.device['vendor']:
-            self.configuration_str = iskratel_slot.get_configuration(session=self.session, device=self.device)
         if 'cisco' in self.device['vendor']:
             self.configuration_str = cisco.get_configuration(session=self.session)
         return self.configuration_str
@@ -289,31 +280,6 @@ class DeviceConnect:
                 device=self.device,
                 backup_group=backup_group,
                 backup_server=backup_server
-            )
-
-        if 'zyxel' in self.device['vendor']:
-            return zyxel.backup(
-                ip=self.device['ip'],
-                device_name=self.device['name'],
-                login=self.__auth_profile['login'],
-                password=self.__auth_profile['password'],
-                backup_group=backup_group
-            )
-        if 'zte' in self.device['vendor']:
-            return zte.backup(
-                telnet_session=self.session,
-                device_ip=self.device['ip'],
-                device_name=self.device['name'],
-                privilege_mode_password=self.__auth_profile['privilege_mode_password'],
-                backup_group=backup_group
-            )
-        if 'iskratel' in self.device['vendor']:
-            return iskratel_slot.backup(
-                device_name=self.device['name'],
-                device_ip=self.device['ip'],
-                user=self.__auth_profile['login'],
-                password=self.__auth_profile['password'],
-                backup_group=backup_group
             )
         if 'cisco' in self.device['vendor']:
             return cisco.backup(

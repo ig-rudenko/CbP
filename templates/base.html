@@ -1,7 +1,10 @@
 <!DOCTYPE html>
-{% load static %}
+{% load static %} {# Инициализируем статику #}
 <html lang="ru">
+
+{# Иконка сайта #}
 <link rel="shortcut icon" type="image/png" href="{% static 'favicon.ico' %}"/>
+
 <head>
     <meta charset="UTF-8">
     <link rel="stylesheet" href="{% static "css/styles.css" %}" />
@@ -12,6 +15,7 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
 </head>
 <body>
+    {# Меню сайта #}
     <ul class="menu-main">
         <li><a class="current" href="/" >Home</a></li>
         {% if superuser %}
@@ -21,13 +25,19 @@
         {% endif %}
         <li><a href="/accounts/logout">Logout</a></li>
     </ul>
+
     <h1 class="center_" style="margin-bottom: 10px">
+    {# Блок для заголовока #}
         {% block header %}{% endblock header %}
     </h1>
+
     <div class="center_ shadow" style="background-color: white; min-height: 100%">
+    {# Блок для контента #}
         {% block content %}{% endblock content %}
     </div>
+
     <div>
+    {# Блок для футера #}
         {% block footer %}{% endblock footer %}
     </div>
 </body>

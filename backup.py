@@ -7,8 +7,6 @@ from datetime import datetime
 import sys
 import ftplib
 
-import pexpect
-
 from cbp.core import logs
 from configparser import ConfigParser
 from cbp.core.database import DataBase
@@ -57,14 +55,6 @@ def ftp_mkdir(ftp: ftplib.FTP, folder: str):
         pass
 
 
-# def sftp_send(ftp_server: dict, local_file_path: str, bg: str, dn: str):
-#     try:
-#         with pexpect.spawn(f'sftp -P ')
-#     except Exception as e:
-#         logs.critical_log.critical(f"FTP: {ftp_server['name']} ({ftp_server['ip']}) {e}")
-#         return e
-
-
 def ftp_send(ftp_server: dict, local_file_path: str, bg: str, dn: str):
     try:
         ftp = Remote(ftp_server).connect()
@@ -81,7 +71,7 @@ def ftp_send(ftp_server: dict, local_file_path: str, bg: str, dn: str):
         return e
 
 
-def get_backup_device(ip, device_name, vendor, protocol, login, password, privilege_mode_password,
+def get_backup_device(ip, device_name, protocol, login, password, privilege_mode_password,
                       backup_group, ftp_servers: dict):
 
     # Доступно ли оборудование
@@ -251,7 +241,6 @@ def backup_start(available_backup_group: str = ''):
                 get_backup_device,  # Функция
                 ip,
                 device_name,
-                vendor,
                 protocol,
                 login,
                 password,

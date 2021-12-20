@@ -44,9 +44,9 @@ def backup(session, device: dict, backup_group: str, backup_server: dict) -> str
     session.sendline('\n')
     priority = session.expect(
         [
-            r'\(config\)#',  # 0 - режим редактирования конфигурации
+            r'\(config\)#',   # 0 - режим редактирования конфигурации
             r'\S+#',          # 1 - привилегированный режим
-            '>'              # 2 - пользовательский режим
+            '>'               # 2 - пользовательский режим
         ]
     )
     if priority == 2:

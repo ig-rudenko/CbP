@@ -13,10 +13,6 @@
 
     git clone https://github.com/ig-rudenko/CbP.git && cd CbP
 
-Создаем образ docker:
-
-    docker image build -t cbp:0.7 .
-
 Запускаем docker-compose:
 
     docker-compose up -d

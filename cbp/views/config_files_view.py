@@ -7,9 +7,6 @@ from cbp.views.user_checks import check_user_permission
 
 from cbp.core.ftp_login import Remote
 from cbp.core.logs import critical_log
-from cbp.core.download_ftp_tree import download_ftp_tree
-from dateconverter import DateConverter
-from re import findall
 import shutil
 import sys
 import os
@@ -19,14 +16,16 @@ import os
 def home(request):
 
     if request.method == 'GET':
+        # Текущий пользователь
+        current_user = User.objects.get(username=str(request.user))
+        available_backup_groups_ids = [
+            g.id for g in
+            BackupGroup.objects.filter(users__username=current_user.username)
+        ] # Все доступные группы у пользователя
 
-        current_user = User.objects.get(username=str(request.user))  # Текущий пользователь
-        available_backup_groups_ids = [g.id for g in
-                                   BackupGroup.objects.filter(users__username=current_user.username)]
-
-        # Все доступные группы у пользователя
         if not available_backup_groups_ids and not current_user.is_superuser:
-            # Если у данного пользователя нет доступных групп и он не суперпользователь, то ничего не выводим
+            # Если у данного пользователя нет доступных групп
+            # и он не суперпользователь, то ничего не выводим
             return render(
                 request,
                 'home.html',
@@ -44,26 +43,34 @@ def home(request):
             try:
                 ftp = Remote(ftp_server).connect()  # Подключаемся к FTP серверу
                 if not ftp.alive():
-                    continue  # Пропускаем сервер, к которому не удалось подключиться
+                    # Пропускаем сервер, к которому не удалось подключиться
+                    continue
 
                 wd = ftp_server.workdir  # Рабочая директория FTP сервера
-                dir_list = ftp.dir(wd)  # Список из папок и файлов в рабочей директории FTP сервера
+
+                dir_list = ftp.dir(wd)  # Список из папок и файлов
+                                        # в рабочей директории FTP сервера
 
                 ftp_dirs[ftp_server.name] = {}  # Создаем словарь для FTP сервера
                 # Backup группы
 
-                for group in dir_list:  # Для каждого найденного файла в рабочей директории
+                for group in dir_list:
+                    # Для каждого найденного файла в рабочей директории
                     # Определяем имя группы
                     gr = group[3]
 
                     try:
-                        # Определяем ID backup_group по имени группы у текущего сервера
-                        bg_id = FtpGroup.objects.get(id=ftp_server.id).backupgroup_set.get(backup_group=gr).id
+                        # Определяем ID backup_group
+                        # по имени группы у текущего сервера
+                        bg_id = FtpGroup.objects.get(
+                            id=ftp_server.id
+                        ).backupgroup_set.get(backup_group=gr).id
                     except BackupGroup.DoesNotExist:
                         # Если имя не найдено в базе
                         bg_id = 'none'
 
-                    if group[0] == 'd' and (bg_id in available_backup_groups_ids or current_user.is_superuser):
+                    if group[0] == 'd' and (bg_id in available_backup_groups_ids
+                                            or current_user.is_superuser):
                         # Сохраняем только папки и разрешенные для пользователя,
                         # Если суперпользователь, то все
                         ftp_dirs[ftp_server.name][gr] = {}
@@ -73,7 +80,9 @@ def home(request):
                     group_list = ftp.dir(f'{wd}/{group}')  # Содержимое группы
 
                     # Создаем упорядоченный список папок для группы
-                    group_list = sorted([g[3] for g in group_list if g[0] == 'd'])
+                    group_list = sorted(
+                        [g[3] for g in group_list if g[0] == 'd']
+                    )
                     for devs in group_list:  # Для каждого устройства в группе
                         ftp_dirs[ftp_server.name][group][devs] = []
 

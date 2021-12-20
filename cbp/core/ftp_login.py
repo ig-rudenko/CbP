@@ -29,7 +29,6 @@ def sizeof_fmt(num: int, suffix='Б'):
     return "%.1f %s%s" % (num, 'Yi', suffix)
 
 
-
 class FTP:
     def __init__(self, ftp_server: dict):
         self.__ftp = ftp_server
