@@ -2,14 +2,14 @@
 
 [![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-380/)
 
-Автоматизирует процесс сбора файлов конфигураций коммутаторов 
+Автоматизирует процесс сбора файлов конфигураций сетевого оборудования 
 различных производителей с отправкой их на FTP-сервер.
 
 ---
 
 ## Установка
 
-Скачиваем репозиторий ([DockerHub](https://hub.docker.com/r/irudenko/cbp)) и переходим в папку:
+Скачиваем репозиторий (или загружаем контейнер [DockerHub](https://hub.docker.com/r/irudenko/cbp)) и переходим в папку:
 
     git clone https://github.com/ig-rudenko/CbP.git && cd CbP
 
