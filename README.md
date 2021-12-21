@@ -9,7 +9,7 @@
 
 ## Установка
 
-Скачиваем репозиторий и переходим в папку:
+Скачиваем репозиторий ([DockerHub](https://hub.docker.com/r/irudenko/cbp)) и переходим в папку:
 
     git clone https://github.com/ig-rudenko/CbP.git && cd CbP
 
