@@ -209,15 +209,14 @@ def backup_start(available_backup_group: str = ''):
             for line in ftp_bg:
                 if line[1] == backup_group_id:
                     ftp_ids.append(line[2])  # Добавляем id подключенного ftp сервера
-
             ftp_servers = [
                 {
                     'id': line[0],
-                    'ip': line[1],
-                    'login': line[2],
-                    'password': line[3],
-                    'workdir': line[4],
-                    'name': line[5],
+                    'name': line[1],
+                    'ip': line[2],
+                    'login': line[3],
+                    'password': line[4],
+                    'workdir': line[5],
                     'protocol': line[6],
                     'sftp_port': line[7]
                 }
